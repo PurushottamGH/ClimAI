@@ -2,8 +2,7 @@ import axios from 'axios';
 
 const API_BASE = 'https://climai-w9t7.onrender.com';
 
-axios.defaults.headers.common['Bypass-Tunnel-Reminder'] = 'true';
-axios.defaults.headers.common['ngrok-skip-browser-warning'] = 'true';
+// Removed tunnel bypass headers for stable production cloud deployment.
 
 export const api = {
     getWeather: () => axios.get(`${API_BASE}/weather`).then(r => r.data),

@@ -28,11 +28,11 @@ logger.addHandler(_handler)
 
 app = FastAPI(title="ClimAI API", version="3.0")
 
-# CORS — allow React dev server
+# CORS — allow public access across all domains
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
