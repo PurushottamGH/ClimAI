@@ -3,3 +3,6 @@ uvicorn>=0.30.0
 requests>=2.32.3
 numpy>=1.26.0,<3.0.0
 global-land-mask>=1.0.0
+groq
+python-dotenv
+
