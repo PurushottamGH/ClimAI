@@ -1,0 +1,51 @@
+.world-map-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #0b0c10;
+}
+
+/* DeckGL overrides */
+.deckgl-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: #1a1a1a;
+    color: #c9d1d9;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    padding: 14px 16px;
+    min-width: 220px;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    transform: translate(-50%, calc(-100% - 15px));
+    z-index: 1000;
+}
+
+.deckgl-tooltip .tt-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.deckgl-tooltip .tt-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #d4dce6;
+    margin-bottom: 8px;
+}
+
+.deckgl-tooltip .tt-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fcffa4;
+    margin-bottom: 4px;
+}
+
+.deckgl-tooltip .tt-sub {
+    color: #5b8a9a;
+    font-size: 12px;
+    margin-bottom: 3px;
+}

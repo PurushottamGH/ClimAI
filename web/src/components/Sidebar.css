@@ -1,0 +1,870 @@
+/* ═══════════════════════════════════════════
+   ClimAI — Climate Intelligence Sidebar
+   Dark futuristic analytics panel
+   ═══════════════════════════════════════════ */
+
+.sidebar-container {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    background: #0a0a0c;
+}
+
+/* ── Left Navigation Icon Strip ── */
+.sidebar-nav-strip {
+    width: 52px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    gap: 8px;
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+    background: #08080a;
+}
+
+.nav-icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    color: #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+}
+
+.nav-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #aaa;
+}
+
+.nav-icon-btn.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+    color: #a78bfa;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+}
+
+.nav-icon-btn.active::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 18px;
+    border-radius: 2px;
+    background: #a78bfa;
+}
+
+.nav-icon-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.nav-spacer {
+    flex: 1;
+}
+
+.nav-icon-btn.bottom-icon {
+    color: #444;
+}
+
+.nav-icon-btn.bottom-icon:hover {
+    color: #888;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* ── Main Panel Content ── */
+.sidebar-main {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px 16px 20px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+.sidebar-main::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-main::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-main::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+}
+
+/* ── Header Section ── */
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.sidebar-header-left {
+    flex: 1;
+}
+
+.sidebar-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-bottom: 8px;
+}
+
+.sidebar-icon-badge svg {
+    width: 22px;
+    height: 22px;
+    color: #a78bfa;
+    filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.4));
+}
+
+.sidebar-title {
+    font-family: 'Inter', 'SF Pro Display', -apple-system, sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #f0f0f0;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.3px;
+}
+
+.sidebar-subtitle {
+    font-size: 10.5px;
+    color: #666;
+    line-height: 1.4;
+    max-width: 160px;
+}
+
+.sidebar-score {
+    font-family: 'Inter', 'SF Pro Display', -apple-system, sans-serif;
+    font-size: 42px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #c4f55a, #a3e635);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-top: 8px;
+    letter-spacing: -2px;
+}
+
+.sidebar-more-btn {
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s;
+    position: absolute;
+    right: 16px;
+    top: 20px;
+}
+
+.sidebar-more-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #aaa;
+}
+
+/* ── Stat Cards Row ── */
+.stat-cards-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 12px 10px;
+    transition: all 0.25s ease;
+}
+
+.stat-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.stat-card.full-width {
+    grid-column: 1 / -1;
+}
+
+.stat-card-icon {
+    font-size: 12px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stat-card-value {
+    font-family: 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #f0f0f0;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+}
+
+.stat-card-value .stat-unit {
+    font-size: 11px;
+    font-weight: 500;
+    color: #777;
+    margin-left: 2px;
+    letter-spacing: 0;
+}
+
+.stat-card-label {
+    font-size: 10px;
+    color: #666;
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-positive {
+    color: #4ade80;
+}
+
+.stat-negative {
+    color: #f87171;
+}
+
+.stat-neutral {
+    color: #a78bfa;
+}
+
+/* ── Temperature Timeline (Bar Chart) ── */
+.timeline-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.timeline-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 80px;
+    padding: 0 2px;
+}
+
+.timeline-bar {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.timeline-bar:hover {
+    opacity: 0.8;
+    transform: scaleY(1.05);
+    transform-origin: bottom;
+}
+
+.timeline-bar.bar-cold {
+    background: linear-gradient(to top, #6366f1, #818cf8);
+}
+
+.timeline-bar.bar-cool {
+    background: linear-gradient(to top, #8b5cf6, #a78bfa);
+}
+
+.timeline-bar.bar-warm {
+    background: linear-gradient(to top, #eab308, #facc15);
+}
+
+.timeline-bar.bar-hot {
+    background: linear-gradient(to top, #f59e0b, #fbbf24);
+}
+
+.timeline-labels {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 2px;
+}
+
+.timeline-labels span {
+    font-size: 9px;
+    color: #555;
+    font-family: 'Inter', sans-serif;
+}
+
+.timeline-labels .now-label {
+    color: #a78bfa;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ── Temperature Scale Gradient ── */
+.temp-scale-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.temp-scale-bar {
+    height: 10px;
+    border-radius: 6px;
+    background: linear-gradient(to right,
+            #1e3a5f,
+            #2563eb,
+            #06b6d4,
+            #22d3ee,
+            #facc15,
+            #f97316,
+            #ef4444);
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.temp-scale-indicator {
+    position: absolute;
+    top: -2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #0a0a0c;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    transform: translateX(-50%);
+    transition: left 0.5s ease;
+}
+
+.temp-scale-labels {
+    display: flex;
+    justify-content: space-between;
+}
+
+.temp-scale-labels span {
+    font-size: 9px;
+    color: #555;
+}
+
+.temp-scale-time {
+    text-align: right;
+    font-size: 9px;
+    color: #555;
+}
+
+/* ── Second gradient (Golden zone) ── */
+.zone-gradient-bar {
+    height: 10px;
+    border-radius: 6px;
+    background: linear-gradient(to right,
+            #ef4444,
+            #f97316,
+            #f97316,
+            #facc15,
+            #facc15,
+            #a3e635,
+            #22d3ee,
+            #22d3ee);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.zone-gradient-bar .zone-divider {
+    position: absolute;
+    top: -2px;
+    width: 3px;
+    height: 14px;
+    background: #0a0a0c;
+    border-radius: 2px;
+}
+
+.zone-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.zone-labels span {
+    font-size: 9px;
+    color: #555;
+}
+
+.zone-labels .zone-highlight {
+    color: #facc15;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-size: 9px;
+}
+
+/* ── Alert Card ── */
+.alert-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 14px 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    transition: all 0.25s ease;
+}
+
+.alert-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.alert-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.alert-dot.critical {
+    background: #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.alert-dot.warning {
+    background: #f59e0b;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.alert-dot.info {
+    background: #3b82f6;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.alert-icon-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.alert-icon-circle svg {
+    width: 14px;
+    height: 14px;
+    color: #888;
+}
+
+.alert-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.alert-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e5e5e5;
+    margin-bottom: 3px;
+}
+
+.alert-text {
+    font-size: 10px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* ── Section Labels ── */
+.section-label {
+    font-size: 9px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-bottom: -8px;
+}
+
+/* ── Animations ── */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sidebar-main>* {
+    animation: fadeInUp 0.4s ease forwards;
+}
+
+.sidebar-main> :nth-child(1) {
+    animation-delay: 0s;
+}
+
+.sidebar-main> :nth-child(2) {
+    animation-delay: 0.05s;
+}
+
+.sidebar-main> :nth-child(3) {
+    animation-delay: 0.1s;
+}
+
+.sidebar-main> :nth-child(4) {
+    animation-delay: 0.15s;
+}
+
+.sidebar-main> :nth-child(5) {
+    animation-delay: 0.2s;
+}
+
+.sidebar-main> :nth-child(6) {
+    animation-delay: 0.25s;
+}
+
+.sidebar-main> :nth-child(7) {
+    animation-delay: 0.3s;
+}
+
+.sidebar-main> :nth-child(8) {
+    animation-delay: 0.35s;
+}
+
+/* ══════════════════════════════════════════════════════════
+   EARTHQUAKE INTELLIGENCE SECTION
+   Card-based layout matching the reference design
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Divider ── */
+.eq-divider {
+    height: 1px;
+    background: linear-gradient(to right,
+            transparent,
+            rgba(255, 255, 255, 0.08),
+            transparent);
+    margin: 4px 0;
+}
+
+/* ── Hero Section ── */
+.eq-hero-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.eq-hero-title {
+    font-family: 'Inter', 'SF Pro Display', -apple-system, sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: #f5f5f5;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+
+.eq-hero-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.eq-hero-icon svg {
+    width: 24px;
+    height: 24px;
+    color: #888;
+}
+
+.eq-hero-desc {
+    font-size: 11px;
+    color: #666;
+    line-height: 1.5;
+    margin: 0;
+    border-left: 2px dashed rgba(255, 255, 255, 0.08);
+    padding-left: 10px;
+}
+
+/* ── Summary Stats Strip ── */
+.eq-summary-strip {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 10px 6px;
+}
+
+.eq-summary-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.eq-summary-val {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #f0f0f0;
+    letter-spacing: -0.3px;
+}
+
+.eq-summary-label {
+    font-size: 8px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.eq-summary-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Wiki-Style Info Cards (Reference Layout) ── */
+.eq-info-card {
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.eq-info-card:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.eq-card-image {
+    width: 100%;
+    height: 120px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    padding: 10px;
+}
+
+.eq-card-badge {
+    font-family: 'Inter', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+}
+
+.eq-card-body {
+    padding: 14px 12px 16px;
+}
+
+.eq-card-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #e8e8e8;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.eq-card-subtitle-badge {
+    display: inline-block;
+    font-size: 8px;
+    font-weight: 700;
+    color: #000;
+    background: #c4f55a;
+    padding: 2px 6px;
+    border-radius: 2px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.eq-card-desc {
+    font-size: 11px;
+    color: #888;
+    line-height: 1.55;
+    margin: 0;
+}
+
+/* ── Live Earthquake Event Cards ── */
+.eq-event-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 14px 12px;
+    transition: all 0.25s ease;
+}
+
+.eq-event-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.eq-event-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.eq-mag-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.eq-mag-badge.mag-extreme {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    box-shadow: 0 0 12px rgba(220, 38, 38, 0.4);
+}
+
+.eq-mag-badge.mag-high {
+    background: linear-gradient(135deg, #ea580c, #f97316);
+    box-shadow: 0 0 12px rgba(234, 88, 12, 0.3);
+}
+
+.eq-mag-badge.mag-moderate {
+    background: linear-gradient(135deg, #ca8a04, #eab308);
+    box-shadow: 0 0 12px rgba(202, 138, 4, 0.3);
+}
+
+.eq-mag-badge.mag-low {
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    box-shadow: 0 0 12px rgba(37, 99, 235, 0.3);
+}
+
+.eq-event-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.eq-event-place {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #e0e0e0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.eq-event-time {
+    font-size: 9.5px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.eq-tsunami-badge {
+    font-size: 8px;
+    font-weight: 700;
+    background: rgba(56, 189, 248, 0.12);
+    color: #38bdf8;
+    padding: 3px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+/* ── Event Details Grid ── */
+.eq-event-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.eq-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.eq-detail-label {
+    font-size: 9.5px;
+    color: #666;
+    width: 72px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.eq-detail-val {
+    font-size: 10.5px;
+    color: #ccc;
+    font-family: 'Inter', monospace;
+    font-weight: 500;
+}
+
+.eq-significance-bar {
+    flex: 1;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.eq-significance-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(to right, #a78bfa, #f472b6);
+    transition: width 0.6s ease;
+}
+
+/* ── Wikipedia-style description ── */
+.eq-event-wiki {
+    font-size: 10px;
+    color: #777;
+    line-height: 1.55;
+    margin: 0;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}

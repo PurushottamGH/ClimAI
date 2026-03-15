@@ -1,0 +1,543 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&display=swap');
+
+/* ── Container Variables & Base ── */
+.eq-dashboard-container {
+    --sz: 360px;
+    --pad: 20px;
+    --r: 20px;
+
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    background-color: transparent;
+    box-sizing: border-box;
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.eq-dashboard-container * {
+    box-sizing: border-box;
+}
+
+.eq-eyebrow {
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.18);
+    margin-bottom: 26px;
+    text-align: center;
+}
+
+.eq-wrap {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    transform: scale(0.6);
+    transform-origin: center;
+}
+
+/* ─── BASE CARD ─────────────────────────────── */
+.eq-card {
+    width: var(--sz);
+    height: var(--sz);
+    border-radius: var(--r);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    border: none;
+    /* Reset any previous borders */
+}
+
+/* ─── CARD 1 ─── teal→slate→lavender gradient + scanlines */
+.eq-c1 {
+    background: linear-gradient(180deg,
+            #1c2e2a 0%, #273c38 7%, #334540 15%,
+            #3f5049 22%, #4d5c56 30%, #5a6462 38%,
+            #6a6e6c 45%, #7e7e7e 52%, #949292 58%,
+            #a6a4a8 63%, #b6b0bc 68%, #c2baca 73%,
+            #cac4d4 78%, #d0ccda 83%, #d4d0de 88%,
+            #d6d2e0 93%, #d8d4e2 100%);
+}
+
+.eq-c1::before {
+    /* scanlines */
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: repeating-linear-gradient(180deg, transparent 0px, transparent 9px,
+            rgba(0, 0, 0, 0.075) 9px, rgba(0, 0, 0, 0.075) 10px);
+}
+
+.eq-c1::after {
+    /* bottom-left warm glow */
+    content: '';
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+    bottom: 50px;
+    left: -30px;
+    width: 200px;
+    height: 160px;
+    background: radial-gradient(ellipse, rgba(170, 55, 30, 0.14) 0%, transparent 70%);
+}
+
+/* ─── CARD 2 ─── dark + diagonal speed lines */
+.eq-c2 {
+    background: #0c0c0e;
+}
+
+.eq-c2-lines {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.eq-c2-lines::before {
+    content: '';
+    position: absolute;
+    top: -30%;
+    left: -10%;
+    width: 130%;
+    height: 160%;
+    background: repeating-linear-gradient(173deg, transparent 0px, transparent 5px,
+            rgba(255, 255, 255, 0.036) 5px, rgba(255, 255, 255, 0.036) 6px);
+}
+
+/* ─── CARD 3 ─── near black */
+.eq-c3 {
+    background: #080809;
+}
+
+/* ─── HEADER ─────────────────────────────────── */
+.eq-hdr {
+    position: relative;
+    z-index: 3;
+    display: grid;
+    grid-template-columns: 48px 1fr 48px;
+    align-items: center;
+    padding: 16px var(--pad) 11px;
+    flex-shrink: 0;
+}
+
+.eq-hdr-side {
+    font-size: 6.5px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    line-height: 1.55;
+}
+
+.eq-hdr-side.right {
+    text-align: right;
+}
+
+.eq-c1 .eq-hdr-side {
+    color: rgba(0, 0, 0, 0.36);
+}
+
+.eq-c2 .eq-hdr-side,
+.eq-c3 .eq-hdr-side {
+    color: rgba(255, 255, 255, 0.28);
+}
+
+.eq-hdr-brand {
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    line-height: 1.15;
+}
+
+.eq-c1 .eq-hdr-brand {
+    color: rgba(0, 0, 0, 0.72);
+}
+
+.eq-c2 .eq-hdr-brand,
+.eq-c3 .eq-hdr-brand {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+/* thin rule */
+.eq-rule {
+    position: relative;
+    z-index: 3;
+    margin: 0 var(--pad);
+    height: 1px;
+    flex-shrink: 0;
+}
+
+.eq-c1 .eq-rule {
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.eq-c2 .eq-rule {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.eq-c3 .eq-rule {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+/* ─── BODY ───────────────────────────────────── */
+.eq-body {
+    position: relative;
+    z-index: 3;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0 var(--pad) 18px;
+    overflow: hidden;
+}
+
+/* ─── CARD 1 BODY ─────────────────────────────── */
+.eq-c1-tagline {
+    font-size: 9.5px;
+    font-weight: 400;
+    line-height: 1.70;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.44);
+    padding: 11px 4px 0;
+    margin: 0;
+}
+
+.eq-c1-metric {
+    margin-top: auto;
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    line-height: 0.86;
+}
+
+.eq-c1-big {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 116px;
+    color: rgba(0, 0, 0, 0.76);
+    letter-spacing: -0.01em;
+    line-height: 0.86;
+}
+
+.eq-c1-sep {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 116px;
+    color: rgba(0, 0, 0, 0.40);
+    line-height: 0.86;
+}
+
+.eq-c1-pill {
+    margin-top: 10px;
+    align-self: flex-end;
+    background: rgba(255, 255, 255, 0.65);
+    color: #111;
+    font-size: 7.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 5px 18px;
+    border-radius: 50px;
+}
+
+.eq-c1-tags {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 10px;
+}
+
+.eq-tag {
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    padding: 5px 13px;
+    border-radius: 50px;
+    border: 1px solid;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.eq-c1 .eq-tag {
+    background: rgba(255, 255, 255, 0.50);
+    border-color: rgba(255, 255, 255, 0.55);
+    color: #111;
+}
+
+.eq-tag-plus {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 300;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.eq-c1 .eq-tag-plus {
+    background: rgba(0, 0, 0, 0.10);
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    color: rgba(0, 0, 0, 0.42);
+}
+
+.eq-c2 .eq-tag-plus,
+.eq-c3 .eq-tag-plus {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    color: rgba(255, 255, 255, 0.50);
+}
+
+/* ─── CARD 2 BODY ─────────────────────────────── */
+.eq-c2-hex-wrap {
+    width: 168px;
+    height: 154px;
+    margin: 10px auto 10px;
+    flex-shrink: 0;
+}
+
+.eq-c2-hex {
+    width: 100%;
+    height: 100%;
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+    background: linear-gradient(148deg, #172718 0%, #091408 50%, #050b05 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.eq-c2-hex::before {
+    /* inner scan */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(180deg, transparent 0px, transparent 4px,
+            rgba(255, 255, 255, 0.028) 4px, rgba(255, 255, 255, 0.028) 5px);
+}
+
+.eq-c2-hex::after {
+    /* soft glow */
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 88px;
+    height: 48px;
+    background: radial-gradient(ellipse, rgba(140, 210, 80, 0.13) 0%, transparent 70%);
+}
+
+.eq-c2-mag {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 76px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: rgba(190, 228, 142, 0.90);
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+}
+
+.eq-c2-mag-sub {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: rgba(190, 228, 142, 0.66);
+    margin-top: 10px;
+}
+
+.eq-c2-desc {
+    font-size: 9.5px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.46);
+    line-height: 1.68;
+    margin-bottom: auto;
+    margin-top: 0;
+}
+
+.eq-c2-tags {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 12px;
+}
+
+.eq-t-default {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.11);
+    color: rgba(255, 255, 255, 0.70);
+}
+
+.eq-t-green {
+    background: rgba(130, 210, 70, 0.09);
+    border-color: rgba(130, 210, 70, 0.20);
+    color: rgba(180, 230, 120, 0.85);
+}
+
+.eq-t-red {
+    background: rgba(210, 65, 45, 0.11);
+    border-color: rgba(210, 65, 45, 0.22);
+    color: rgba(240, 130, 108, 0.85);
+}
+
+/* ─── CARD 3 BODY ─────────────────────────────── */
+.eq-c3-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-top: 10px;
+}
+
+.eq-c3-label {
+    font-size: 9px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.44);
+    line-height: 1.62;
+}
+
+.eq-c3-bigrow {
+    display: flex;
+    align-items: flex-start;
+}
+
+.eq-c3-arrow {
+    font-size: 28px;
+    font-weight: 300;
+    color: #d04e36;
+    line-height: 1;
+    margin-right: 1px;
+    padding-top: 3px;
+}
+
+.eq-c3-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 72px;
+    letter-spacing: -0.02em;
+    line-height: 0.86;
+    color: #e05840;
+    animation: glowPulse 3.4s ease-in-out infinite;
+}
+
+.eq-c3-unit {
+    font-size: 20px;
+    font-weight: 700;
+    color: rgba(214, 80, 55, 0.65);
+    align-self: flex-end;
+    padding-bottom: 6px;
+    padding-left: 2px;
+}
+
+.eq-waveform {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 86px;
+    margin: 10px 0 8px;
+    flex-shrink: 0;
+}
+
+.eq-wb {
+    flex: 1;
+    border-radius: 1.5px;
+    min-width: 2px;
+}
+
+.eq-c3-footer {
+    margin-top: auto;
+}
+
+.eq-c3-tags {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 12px;
+}
+
+.eq-c3-bottom {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+}
+
+.eq-c3-brand {
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+    color: rgba(255, 255, 255, 0.80);
+    line-height: 1.15;
+}
+
+.eq-c3-brand-right {
+    font-size: 6.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.26);
+    text-align: right;
+    line-height: 1.55;
+}
+
+/* ─── ANIMATIONS ──────────────────────────────── */
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.eq-card {
+    animation: fadeUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.eq-card:nth-child(1) {
+    animation-delay: 0.00s;
+}
+
+.eq-card:nth-child(2) {
+    animation-delay: 0.10s;
+}
+
+.eq-card:nth-child(3) {
+    animation-delay: 0.20s;
+}
+
+@keyframes glowPulse {
+
+    0%,
+    100% {
+        text-shadow: 0 0 0 rgba(220, 80, 50, 0);
+    }
+
+    50% {
+        text-shadow: 0 0 28px rgba(220, 80, 50, 0.36), 0 0 54px rgba(220, 80, 50, 0.13);
+    }
+}
+
+@keyframes waveSway {
+
+    0%,
+    100% {
+        transform: scaleY(1);
+    }
+
+    50% {
+        transform: scaleY(0.72);
+    }
+}

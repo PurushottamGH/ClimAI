@@ -1,0 +1,178 @@
+/* ── App Layout ── */
+.app-layout {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #0b0f14;
+}
+
+/* ── Bottom Panel Wrapper ── */
+.panel-bottom-wrapper {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ── Row for toggle + AI button ── */
+.toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    z-index: 600;
+    pointer-events: auto;
+}
+
+/* ── Toggle repositioned above bottom panel ── */
+.panel-bottom-wrapper .category-toggle-wrapper {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    margin-bottom: 0;
+    z-index: 600;
+}
+
+/* ── Standalone AI Button ── */
+.ai-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(16, 16, 18, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 50px;
+    padding: 11px 22px;
+    color: #ffffff;
+    font-family: 'Montserrat', 'Inter', -apple-system, sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    transition: background 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+    white-space: nowrap;
+}
+
+.ai-btn:hover {
+    background: rgba(255, 255, 255, 0.95);
+    color: #111111;
+    box-shadow: 0 4px 28px rgba(255, 255, 255, 0.1);
+    transform: scale(1.04);
+}
+
+/* ── Bottom Panel ── */
+.panel-bottom {
+    width: 100%;
+    height: 240px;
+    background: rgba(10, 10, 12, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    transition: height 0.3s ease;
+}
+
+/* ── Earthquake AI Dashboard Override ── */
+.panel-bottom.eq-dashboard-active {
+    height: 240px;
+}
+
+/* ── Placeholder content ── */
+.panel-placeholder {
+    width: 100%;
+    height: 100%;
+}
+
+/* ── Cyclone Dropdown Filter ── */
+.cyclone-select {
+    display: inline-block;
+    background: rgba(16, 16, 18, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 50px;
+    padding: 11px 40px 11px 22px;
+    color: #ffffff;
+    font-family: 'Montserrat', 'Inter', -apple-system, sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    transition: background 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+    outline: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    line-height: normal;
+}
+
+.cyclone-select:hover,
+.cyclone-select:focus {
+    background: rgba(255, 255, 255, 0.95);
+    color: #111111;
+    box-shadow: 0 4px 28px rgba(255, 255, 255, 0.1);
+}
+
+.cyclone-select option {
+    background: #111111;
+    color: #ffffff;
+}
+
+.cyclone-select-icon {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: rgba(255, 255, 255, 0.5);
+    pointer-events: none;
+    transition: color 0.15s ease;
+}
+
+.cyclone-select:hover+.cyclone-select-icon,
+.cyclone-select:focus+.cyclone-select-icon {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ── Common Dashboard Analytics Rows (Restored) ── */
+.eq-charts-row {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    height: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.eq-chart-card {
+    background: rgba(16, 18, 24, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.eq-chart-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #a0aec0;
+    margin-bottom: 12px;
+}

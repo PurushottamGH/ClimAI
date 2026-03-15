@@ -1,0 +1,65 @@
+.top-nav-wrapper {
+    position: fixed;
+    top: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    background: rgba(16, 18, 24, 0.4); /* Subtle glass background */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 50px;
+    padding: 6px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.top-nav-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* The animating background pill for the active item */
+.nav-pill-slider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 50px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1; /* Behind text, above container bg */
+}
+
+.nav-btn {
+    position: relative;
+    z-index: 2; /* Content above the pill slider */
+    background: transparent;
+    border: none;
+    padding: 10px 24px;
+    color: #8892b0;
+    font-family: 'Montserrat', 'Inter', -apple-system, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    border-radius: 50px;
+    text-transform: uppercase;
+}
+
+.nav-btn:hover {
+    color: #e2e8f0;
+}
+
+.nav-btn.active {
+    color: #ffffff;
+    pointer-events: none; /* Prevent re-clicking active tab */
+}
+
+/* When the component mounts and the pill slider is setting up */
+.nav-pill-slider.uninitialized {
+    opacity: 0;
+    transition: none;
+}

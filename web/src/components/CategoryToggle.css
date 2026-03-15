@@ -1,0 +1,153 @@
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-VariableFont_wght.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-Italic-VariableFont_wght.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: italic;
+}
+
+/* ══════════════════════════════════════
+   Wrapper — always sized, always hoverable
+   ══════════════════════════════════════ */
+.category-toggle-wrapper {
+    z-index: 1000;
+    pointer-events: auto;
+    display: flex;
+    justify-content: center;
+    /* Generous padding so hover catch area is large even when collapsed */
+    padding: 12px 40px;
+    cursor: pointer;
+}
+
+/* ══════════════════════════════════════
+   Collapsed View — clean pill with label
+   ══════════════════════════════════════ */
+.toggle-collapsed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(16, 16, 18, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 50px;
+    padding: 4px 5px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    animation: fadeScaleIn 0.15s ease forwards;
+}
+
+.collapsed-pill {
+    display: block;
+    background: #ffffff;
+    color: #111111;
+    font-family: 'Montserrat', 'Inter', -apple-system, sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 7px 22px;
+    border-radius: 50px;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+    user-select: none;
+}
+
+.collapsed-hint {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 10px;
+    margin-left: 6px;
+    margin-right: 4px;
+    transition: color 0.15s ease;
+}
+
+.toggle-collapsed:hover .collapsed-hint {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* ══════════════════════════════════════
+   Expanded View — full bar with all options
+   ══════════════════════════════════════ */
+.category-toggle-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(16, 16, 18, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 50px;
+    padding: 4px 5px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.02);
+    animation: fadeScaleIn 0.15s ease forwards;
+}
+
+.category-toggle-inner:hover {
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* ══════════════════════════════════════
+   White Pill Slider — snappy 150ms
+   ══════════════════════════════════════ */
+.category-pill-slider {
+    position: absolute;
+    top: 4px;
+    height: calc(100% - 8px);
+    background: #ffffff;
+    border-radius: 50px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    transition: left 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+        width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+    will-change: left, width;
+}
+
+/* ══════════════════════════════════════
+   Category Buttons
+   ══════════════════════════════════════ */
+.category-btn {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: 'Montserrat', 'Inter', -apple-system, sans-serif;
+    font-size: 13.5px;
+    font-weight: 500;
+    padding: 7px 16px;
+    border-radius: 50px;
+    cursor: pointer;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+    transition: color 0.12s ease;
+}
+
+.category-btn:hover {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.category-btn.active {
+    color: #111111;
+    font-weight: 600;
+}
+
+/* ══════════════════════════════════════
+   Shared animation
+   ══════════════════════════════════════ */
+@keyframes fadeScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
