@@ -30,7 +30,7 @@ def _infer_past_date_from_query(query: str):
     if m:
         year = int(m.group(1))
         if year < current_year:
-            now = datetime.now()
+            now = datetime.utcnow()
             try:
                 return datetime(year, now.month, now.day)
             except ValueError:
@@ -133,6 +133,14 @@ def execute_plan(plan):
 
             # Find all past years mentioned (e.g. 2025, 2024)
             past_dates = _extract_all_past_years(query)
+
+            # FIX: If no explicit years found but target_date is in the past, use it!
+            # This handles relative phrases like "last year", "a year ago", etc.
+            if not past_dates and target_date:
+                now_date = datetime.utcnow().date()
+                target_dt_only = target_date.date() if isinstance(target_date, datetime) else target_date
+                if target_dt_only < now_date:
+                    past_dates = [target_date]
 
             if past_dates:
                 comparison_results = []
