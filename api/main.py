@@ -26,12 +26,20 @@ _handler = logging.StreamHandler()
 _handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
 logger.addHandler(_handler)
 
-app = FastAPI(title="ClimAI API", version="3.1")
+app = FastAPI(title="ClimAI API", version="3.2")
 
-# CORS — enable cross-origin access for frontend
+@app.middleware("http")
+async def add_cors_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
+
+# Standard CORS as well for preflight (OPTIONS) requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*", "https://climai.vercel.app"],
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,7 +47,7 @@ app.add_middleware(
 
 @app.get("/ping")
 def ping():
-    return {"status": "ok", "time": datetime.now().isoformat(), "version": "3.1"}
+    return {"status": "ok", "time": datetime.now().isoformat(), "version": "3.2"}
 
 # Chennai coordinates
 LAT = 13.0827
