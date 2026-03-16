@@ -26,7 +26,7 @@ _handler = logging.StreamHandler()
 _handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
 logger.addHandler(_handler)
 
-app = FastAPI(title="ClimAI API", version="3.2")
+app = FastAPI(title="ClimAI API", version="3.3")
 
 # ── CORS — must be added FIRST before any other middleware ──
 app.add_middleware(
