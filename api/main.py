@@ -882,36 +882,49 @@ def get_tsunamis():
 # ════════════════════════════════
 # /temperature-map — Global temperature grid for heatmap
 # ════════════════════════════════
+
+# Cache the temperature map so it's only computed once per server start
+_temp_map_cache = None
+_temp_map_timestamp = None
+
 @app.get("/temperature-map")
 def get_temperature_map():
-    """Current temperature at a grid of global land locations for a true geographic heatmap."""
+    """Lightweight temperature grid — memory-safe for free tier hosting."""
+    global _temp_map_cache, _temp_map_timestamp
     import random
 
-    try:
-        from global_land_mask import globe
-        use_land_mask = True
-    except ImportError:
-        use_land_mask = False
+    # Return cached version if less than 30 minutes old
+    if _temp_map_cache and _temp_map_timestamp:
+        age = (datetime.now() - _temp_map_timestamp).seconds
+        if age < 1800:
+            return _temp_map_cache
 
+    # Use a coarse 5-degree grid instead of 1-degree
+    # 1-degree = ~46,000 points (kills free RAM)
+    # 5-degree = ~1,800 points (memory safe)
+    STEP = 5
     all_points = []
 
-    for lat in range(-56, 72, 1):
-        for lon in range(-180, 180, 1):
-            # Use land mask if available, otherwise use all grid points
-            is_land = globe.is_land(lat, lon) if use_land_mask else True
-            if is_land:
-                simulated_temp = 32 - abs(lat) * 0.65 + random.uniform(-3, 3)
-                all_points.append({
-                    "lat": lat,
-                    "lon": lon,
-                    "temp_c": round(simulated_temp, 1)
-                })
+    for lat in range(-55, 70, STEP):
+        for lon in range(-180, 180, STEP):
+            simulated_temp = 32 - abs(lat) * 0.65 + random.uniform(-3, 3)
+            all_points.append({
+                "lat": lat,
+                "lon": lon,
+                "temp_c": round(simulated_temp, 1)
+            })
 
-    return {
+    result = {
         "points": all_points,
         "count": len(all_points),
         "timestamp": datetime.now().isoformat(),
     }
+
+    # Cache the result
+    _temp_map_cache = result
+    _temp_map_timestamp = datetime.now()
+
+    return result
 
 
 # ════════════════════════════════════════════════════════════
