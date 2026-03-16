@@ -3,6 +3,7 @@ import WorldMap from './components/WorldMap';
 
 import CategoryToggle from './components/CategoryToggle';
 import EarthquakeCharts from './components/EarthquakeCharts';
+import CycloneCharts from './components/CycloneCharts';
 import TsunamiCharts from './components/TsunamiCharts';
 import TemperatureCharts from './components/TemperatureCharts';
 import EventsTimeline from './components/EventsTimeline';
