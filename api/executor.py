@@ -64,9 +64,15 @@ def _extract_all_past_years(query: str):
                 years_to_process.append(y)
 
     # Then detect individual years, ensuring we don't duplicate
-    single_matches = re.finditer(r'\b(19\d{2}|20\d{2})\b', q)
+    # Also catch 2-digit shorthand years (e.g. 23, 24, 25)
+    single_matches = re.finditer(r'\b(19\d{2}|20\d{2}|2[0-5])\b', q)
     for m in single_matches:
-        y = int(m.group(1))
+        val = m.group(1)
+        if len(val) == 2:
+            y = 2000 + int(val)
+        else:
+            y = int(val)
+            
         if y < current_year and y not in seen:
             seen.add(y)
             years_to_process.append(y)
