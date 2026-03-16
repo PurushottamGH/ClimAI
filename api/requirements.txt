@@ -6,5 +6,6 @@ global-land-mask>=1.0.0
 groq
 python-dotenv
 dateparser
-
-
+scikit-learn
+xgboost
+lightgbm
