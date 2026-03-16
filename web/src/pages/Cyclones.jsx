@@ -11,15 +11,45 @@ const COLORS = ['#f97316', '#eab308', '#22c55e', '#a855f7', '#ec4899', '#06b6d4'
 export default function Cyclones() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);   // ← FIX 1: track errors
 
-    useEffect(() => { api.getCyclones().then(setData).finally(() => setLoading(false)); }, []);
+    useEffect(() => {
+        api.getCyclones()
+            .then(res => {
+                // FIX 2: validate response shape before setting state
+                if (res && typeof res === 'object') {
+                    setData(res);
+                } else {
+                    setError('Unexpected data format from server.');
+                }
+            })
+            .catch(err => {
+                // FIX 3: catch API/network failures instead of going blank
+                console.error('Cyclone API error:', err);
+                setError(err?.message || 'Failed to load cyclone data.');
+            })
+            .finally(() => setLoading(false));
+    }, []);
+
     if (loading) return <Loader />;
+
+    // FIX 4: show error state instead of blank screen
+    if (error) return <ErrorState message={error} />;
+
+    // FIX 5: guard against null data (shouldn't happen now, but just in case)
+    if (!data) return <ErrorState message="No data received from server." />;
 
     const cyclones = data?.cyclones || [];
     const summary = data?.summary || {};
 
+    // FIX 6: show empty state instead of broken empty charts
+    if (cyclones.length === 0) return <EmptyState />;
+
     const windData = cyclones.map(c => ({ name: c.name.replace('Cyclone ', ''), wind: c.max_wind_kmh })).reverse();
     const rainfallData = cyclones.map(c => ({ name: c.name.replace('Cyclone ', ''), rainfall: c.rainfall_mm })).reverse();
+
+    // FIX 7: round avg_wind for clean display
+    const avgWind = summary.avg_wind != null ? Math.round(summary.avg_wind) : '—';
 
     return (
         <div className="space-y-3">
@@ -30,10 +60,10 @@ export default function Cyclones() {
 
             <div className="grid grid-cols-4 gap-2">
                 {[
-                    { icon: '🌪', label: 'Total', value: summary.total, color: '#3b82f6' },
-                    { icon: '💨', label: 'Avg Wind', value: `${summary.avg_wind} km/h`, color: '#f97316' },
-                    { icon: '💸', label: 'Damage', value: `₹${(summary.total_damage / 1000).toFixed(0)}K Cr`, color: '#eab308' },
-                    { icon: '📅', label: 'Period', value: summary.period, color: '#22c55e' },
+                    { icon: '🌪', label: 'Total', value: summary.total ?? '—', color: '#3b82f6' },
+                    { icon: '💨', label: 'Avg Wind', value: avgWind !== '—' ? `${avgWind} km/h` : '—', color: '#f97316' },
+                    { icon: '💸', label: 'Damage', value: summary.total_damage ? `₹${(summary.total_damage / 1000).toFixed(0)}K Cr` : '—', color: '#eab308' },
+                    { icon: '📅', label: 'Period', value: summary.period ?? '—', color: '#22c55e' },
                 ].map((k, i) => (
                     <div key={i} className="card flex flex-col justify-center h-[64px]">
                         <div className="text-[9px]" style={{ color: '#555' }}>{k.icon} {k.label}</div>
@@ -139,12 +169,37 @@ export default function Cyclones() {
     );
 }
 
+// ── Helper components ─────────────────────────────────────────────────────────
+
 function Loader() {
     return (
         <div className="flex items-center justify-center h-[300px]">
             <div className="flex flex-col items-center gap-2">
                 <div className="w-5 h-5 border-2 border-[#1e1e1e] border-t-[#f97316] rounded-full animate-spin" />
                 <span className="text-[10px]" style={{ color: '#555' }}>Loading cyclone data…</span>
+            </div>
+        </div>
+    );
+}
+
+function ErrorState({ message }) {
+    return (
+        <div className="flex items-center justify-center h-[300px]">
+            <div className="flex flex-col items-center gap-2 text-center px-6">
+                <span style={{ fontSize: 28 }}>🌪️</span>
+                <div className="text-[12px] font-medium" style={{ color: '#f97316' }}>Failed to load cyclone data</div>
+                <div className="text-[10px]" style={{ color: '#555' }}>{message}</div>
+            </div>
+        </div>
+    );
+}
+
+function EmptyState() {
+    return (
+        <div className="flex items-center justify-center h-[300px]">
+            <div className="flex flex-col items-center gap-2">
+                <span style={{ fontSize: 28 }}>🌊</span>
+                <div className="text-[11px]" style={{ color: '#555' }}>No cyclone records found.</div>
             </div>
         </div>
     );
