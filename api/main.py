@@ -28,22 +28,32 @@ logger.addHandler(_handler)
 
 app = FastAPI(title="ClimAI API", version="3.2")
 
-@app.middleware("http")
-async def add_cors_headers(request, call_next):
-    response = await call_next(request)
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    return response
-
-# Standard CORS as well for preflight (OPTIONS) requests
+# ── CORS — must be added FIRST before any other middleware ──
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# ── Manual CORS headers as a safety net for all responses ──
+@app.middleware("http")
+async def add_cors_headers(request, call_next):
+    # Handle preflight OPTIONS requests immediately
+    from fastapi.responses import Response as FastAPIResponse
+    if request.method == "OPTIONS":
+        response = FastAPIResponse()
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 @app.get("/ping")
 def ping():
@@ -874,20 +884,22 @@ def get_tsunamis():
 # ════════════════════════════════
 @app.get("/temperature-map")
 def get_temperature_map():
-    """Current temperature at a grid of global land locations for a true geographic heatmap.
-    Batches requests to avoid 414 URI-too-long errors."""
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-    from global_land_mask import globe
-
-    # High Density Grid: every 2.5° lat/lon, strictly landmasses for perfect continental blending
+    """Current temperature at a grid of global land locations for a true geographic heatmap."""
     import random
+
+    try:
+        from global_land_mask import globe
+        use_land_mask = True
+    except ImportError:
+        use_land_mask = False
+
     all_points = []
-    
+
     for lat in range(-56, 72, 1):
         for lon in range(-180, 180, 1):
-            # global-land-mask will flawlessly trace coastlines
-            if globe.is_land(lat, lon):
-                # Simulated realistic global temperatures (equator hot, poles cold + slight variance)
+            # Use land mask if available, otherwise use all grid points
+            is_land = globe.is_land(lat, lon) if use_land_mask else True
+            if is_land:
                 simulated_temp = 32 - abs(lat) * 0.65 + random.uniform(-3, 3)
                 all_points.append({
                     "lat": lat,
