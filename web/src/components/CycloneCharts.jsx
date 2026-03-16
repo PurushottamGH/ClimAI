@@ -5,16 +5,18 @@ import {
 } from 'recharts';
 import '../components/EarthquakeCharts.css';   /* reuse same dark chart styles */
 
-// ── Category → color mapping (matching reference) ──
+// ── Category → color mapping ──
 function getCatColor(cat) {
-    if (cat.includes('Very Severe')) return '#f5b7c5';   // Pink — VSCS
-    if (cat.includes('Severe')) return '#5b9bd5';   // Blue — SCS
-    return '#7fc8f8';                                    // Light blue — CS
+    if (!cat) return '#7fc8f8';
+    if (String(cat).includes('Very Severe')) return '#f5b7c5';
+    if (String(cat).includes('Severe')) return '#5b9bd5';
+    return '#7fc8f8';
 }
 
 function getCatLabel(cat) {
-    if (cat.includes('Very Severe')) return 'VSCS';
-    if (cat.includes('Severe')) return 'SCS';
+    if (!cat) return 'CS';
+    if (String(cat).includes('Very Severe')) return 'VSCS';
+    if (String(cat).includes('Severe')) return 'SCS';
     return 'CS';
 }
 
@@ -77,16 +79,16 @@ export default function CycloneCharts({ data = [] }) {
 
     // ── Prepare data ──
     const chartData = useMemo(() => {
-        if (!data.length) return [];
-        return data
-            .sort((a, b) => a.year - b.year)
+        if (!Array.isArray(data) || !data.length) return [];
+        return [...data]
+            .sort((a, b) => (a.year || 0) - (b.year || 0))
             .map(c => ({
-                name: c.name,
-                shortName: c.name.replace('Cyclone ', ''),
-                damage_crore: c.damage_crore,
-                rainfall_mm: c.rainfall_mm,
-                max_wind_kmh: c.max_wind_kmh,
-                category: c.category,
+                name: c.name || 'Unknown',
+                shortName: (c.name || 'Unknown').replace('Cyclone ', ''),
+                damage_crore: c.damage_crore || 0,
+                rainfall_mm: c.rainfall_mm || 0,
+                max_wind_kmh: c.max_wind_kmh || 0,
+                category: c.category || 'CS',
                 catLabel: getCatLabel(c.category),
                 color: getCatColor(c.category),
                 year: c.year,
@@ -94,7 +96,13 @@ export default function CycloneCharts({ data = [] }) {
             }));
     }, [data]);
 
-    if (!chartData.length) return null;
+    if (!chartData || chartData.length === 0) {
+        return (
+            <div className="flex items-center justify-center w-full h-full text-[#555] text-[12px] italic">
+                No cyclone data available at the moment.
+            </div>
+        );
+    }
 
     return (
         <div className="eq-charts-row">
