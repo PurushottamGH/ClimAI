@@ -26,38 +26,23 @@ _handler = logging.StreamHandler()
 _handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
 logger.addHandler(_handler)
 
-app = FastAPI(title="ClimAI API", version="3.3")
+app = FastAPI(title="ClimAI API", version="3.5-pro")
 
-# ── CORS — must be added FIRST before any other middleware ──
+# ── CORS Configuration ──────────────────────────────────────────────────────
+# Using the standard FastAPI CORSMiddleware. 
+# This handles preflight (OPTIONS) and header injection correctly for all routes.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
+    allow_credentials=True,  # Set to True for better compatibility with standard fetch
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
 
-# ── Manual CORS headers as a safety net for all responses ──
-@app.middleware("http")
-async def add_cors_headers(request, call_next):
-    # Handle preflight OPTIONS requests immediately
-    from fastapi.responses import Response as FastAPIResponse
-    if request.method == "OPTIONS":
-        response = FastAPIResponse()
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        return response
-    response = await call_next(request)
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    return response
-
 @app.get("/ping")
 def ping():
-    return {"status": "ok", "time": datetime.now().isoformat(), "version": "3.2"}
+    return {"status": "ok", "time": datetime.now().isoformat(), "version": "3.5-pro"}
 
 # Chennai coordinates
 LAT = 13.0827
