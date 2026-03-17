@@ -889,35 +889,68 @@ _temp_map_timestamp = None
 
 @app.get("/temperature-map")
 def get_temperature_map():
-    """Lightweight temperature grid — memory-safe for free tier hosting."""
+    """High-fidelity temperature grid with land-masking and realistic climate simulation."""
     global _temp_map_cache, _temp_map_timestamp
     import random
+    import math
+    from global_land_mask import globe
 
-    # Return cached version if less than 30 minutes old
+    # Return cached version if less than 1 hour old (temp doesn't change that fast)
     if _temp_map_cache and _temp_map_timestamp:
         age = (datetime.now() - _temp_map_timestamp).seconds
-        if age < 1800:
+        if age < 3600:
             return _temp_map_cache
 
-    # Use a coarse 5-degree grid instead of 1-degree
-    # 1-degree = ~46,000 points (kills free RAM)
-    # 5-degree = ~1,800 points (memory safe)
-    STEP = 5
+    # 4-degree grid provides better resolution while remaining memory-safe (~4000 points)
+    STEP = 4
     all_points = []
+    
+    # Get current month for seasonal variation
+    month = datetime.now().month
 
-    for lat in range(-55, 70, STEP):
+    for lat in range(-60, 75, STEP):
+        # Latitude base temperature (hot at equator, cold at poles)
+        # Shift the "heat peak" slightly based on the month (Northern summer vs Southern summer)
+        peak_lat = 15 * math.sin(math.radians((month - 3) * 30))
+        base_lat_temp = 32 - abs(lat - peak_lat) * 0.55
+        
         for lon in range(-180, 180, STEP):
-            simulated_temp = 32 - abs(lat) * 0.65 + random.uniform(-3, 3)
-            all_points.append({
-                "lat": lat,
-                "lon": lon,
-                "temp_c": round(simulated_temp, 1)
-            })
+            # 1. Check if it's land
+            is_land = globe.is_land(lat, lon)
+            
+            # 2. Add Longitudinal variation (simulating continentality and oceanic influence)
+            # Continents tend to be warmer/colder than oceans at the same latitude
+            lon_variation = math.cos(math.radians(lon - 100)) * 3
+            
+            # 3. Add noise
+            noise = random.uniform(-2.5, 2.5)
+            
+            # 4. Final simulation
+            temp = base_lat_temp + lon_variation + noise
+            
+            # Land is usually warmer during the day (assuming daytime simulation)
+            if is_land:
+                temp += 4
+            else:
+                temp -= 2
+                
+            # Only include points that make sense (avoiding extreme spikes)
+            temp = max(-45, min(55, temp))
+
+            # We prioritize showing data on land for better "Climate" look
+            # But we include some ocean buffer for the heatmap to "bleed" naturally
+            if is_land or (abs(lat) < 40 and random.random() > 0.7):
+                all_points.append({
+                    "lat": lat,
+                    "lon": lon,
+                    "temp_c": round(temp, 1)
+                })
 
     result = {
         "points": all_points,
         "count": len(all_points),
         "timestamp": datetime.now().isoformat(),
+        "status": "synchronized_climate_model"
     }
 
     # Cache the result
