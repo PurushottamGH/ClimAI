@@ -125,8 +125,8 @@ def execute_plan(plan):
     }
 
     try:
-        from main import (get_cyclones, get_earthquakes, get_tsunamis,
-                          get_weather, get_forecast, fetch_historical_weather)
+        from weather_service import (get_cyclones, get_earthquakes, get_tsunamis,
+                                     get_weather, get_forecast, fetch_historical_weather)
 
         now = datetime.utcnow().date()
 
