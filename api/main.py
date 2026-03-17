@@ -939,11 +939,11 @@ def get_temperature_map():
 
             # We prioritize showing data on land for better "Climate" look
             # But we include some ocean buffer for the heatmap to "bleed" naturally
-                all_points.append({
-                    "lat": lat,
-                    "lon": lon,
-                    "temp_c": round(temp, 1)
-                })
+            all_points.append({
+                "lat": lat,
+                "lon": lon,
+                "temp_c": round(temp, 1)
+            })
 
     result = {
         "points": all_points,
