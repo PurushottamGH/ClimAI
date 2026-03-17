@@ -31,3 +31,12 @@ Desktop.ini
 .vscode/
 .idea/
 .DS_Store
+
+# Automation
+autosync.ps1
+climai.log
+api/climai.log
+test_planner.py
+api/test_planner.py
+test_llm_fix.py
+api/test_llm_fix.py
