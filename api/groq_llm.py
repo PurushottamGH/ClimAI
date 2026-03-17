@@ -89,11 +89,31 @@ def groq_answer(query: str, intents: list, data_sources: dict,
     # Earthquake
     if "earthquake" in data_sources and data_sources["earthquake"]:
         eq = data_sources["earthquake"]
-        data_summary["earthquakes"] = eq[:5] if isinstance(eq, list) else eq
+        if isinstance(eq, dict):
+            # Include high-level summary + only the 10 most recent/significant events
+            data_summary["earthquakes"] = {
+                "summary": eq.get("summary"),
+                "recent_events": eq.get("events", [])[:10]
+            }
+        elif isinstance(eq, list):
+            data_summary["earthquakes"] = eq[:10]
+        else:
+            data_summary["earthquakes"] = eq
 
     # Cyclone
     if "cyclone" in data_sources and data_sources["cyclone"]:
-        data_summary["cyclone"] = data_sources["cyclone"]
+        cy = data_sources["cyclone"]
+        if isinstance(cy, dict) and "cyclones" in cy:
+            # Truncate detailed tracks to prevent massive token usage
+            truncated_cyc = []
+            for c in cy["cyclones"]:
+                c_copy = c.copy()
+                if "track" in c_copy:
+                    c_copy["track"] = c_copy["track"][:5] # Just show the start/progression
+                truncated_cyc.append(c_copy)
+            data_summary["cyclone"] = {"cyclones": truncated_cyc}
+        else:
+            data_summary["cyclone"] = cy
 
     # Tsunami
     if "tsunami" in data_sources and data_sources["tsunami"]:
