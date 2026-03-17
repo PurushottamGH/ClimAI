@@ -961,6 +961,537 @@ def get_temperature_map():
 
 
 # ════════════════════════════════════════════════════════════
+# /aqi — Air Quality Index for Chennai (OpenAQ)
+# ════════════════════════════════════════════════════════════
+@app.get("/aqi")
+def get_aqi():
+    """Fetch real AQI data for Chennai from Open-Meteo air quality API."""
+    url = "https://air-quality-api.open-meteo.com/v1/air-quality"
+    params = {
+        "latitude": LAT,
+        "longitude": LON,
+        "current": "pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,european_aqi",
+        "timezone": "Asia/Kolkata",
+    }
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        current = data.get("current", {})
+
+        aqi = current.get("european_aqi", 0)
+
+        # AQI category classification
+        if aqi <= 20:
+            category = "Good"
+            color = "#22c55e"
+            advice = "Air quality is excellent. Perfect for outdoor activities."
+        elif aqi <= 40:
+            category = "Fair"
+            color = "#84cc16"
+            advice = "Air quality is acceptable. Sensitive groups should take care."
+        elif aqi <= 60:
+            category = "Moderate"
+            color = "#eab308"
+            advice = "Moderate pollution. Limit prolonged outdoor exertion."
+        elif aqi <= 80:
+            category = "Poor"
+            color = "#f97316"
+            advice = "Poor air quality. Avoid outdoor activities if possible."
+        elif aqi <= 100:
+            category = "Very Poor"
+            color = "#ef4444"
+            advice = "Very poor air quality. Stay indoors and wear a mask outside."
+        else:
+            category = "Extremely Poor"
+            color = "#7c3aed"
+            advice = "Hazardous conditions. Avoid all outdoor activities."
+
+        return {
+            "aqi": aqi,
+            "category": category,
+            "color": color,
+            "advice": advice,
+            "pm2_5": current.get("pm2_5"),
+            "pm10": current.get("pm10"),
+            "nitrogen_dioxide": current.get("nitrogen_dioxide"),
+            "ozone": current.get("ozone"),
+            "carbon_monoxide": current.get("carbon_monoxide"),
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ════════════════════════════════════════════════════════════
+# /flood-risk — Flood Risk Score for Chennai
+# ════════════════════════════════════════════════════════════
+@app.get("/flood-risk")
+def get_flood_risk():
+    """Calculate flood risk score for Chennai based on rainfall, humidity, and forecast."""
+    try:
+        # Fetch current weather
+        weather_url = "https://api.open-meteo.com/v1/forecast"
+        weather_params = {
+            "latitude": LAT, "longitude": LON,
+            "current": "precipitation,relative_humidity_2m,rain",
+            "daily": "precipitation_sum,precipitation_probability_max",
+            "forecast_days": 3,
+            "timezone": "Asia/Kolkata",
+        }
+        r = requests.get(weather_url, params=weather_params, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        current = data.get("current", {})
+        daily = data.get("daily", {})
+
+        # Flood risk factors
+        current_rain = current.get("rain", 0) or 0
+        current_precip = current.get("precipitation", 0) or 0
+        humidity = current.get("relative_humidity_2m", 0) or 0
+        precip_sums = daily.get("precipitation_sum", [0, 0, 0])
+        precip_probs = daily.get("precipitation_probability_max", [0, 0, 0])
+
+        total_forecast_rain = sum(p for p in precip_sums if p) 
+        max_prob = max(p for p in precip_probs if p) if precip_probs else 0
+
+        # Score calculation (0-100)
+        score = 0
+        score += min(current_rain * 5, 25)        # current rain (max 25pts)
+        score += min(humidity * 0.2, 15)           # humidity (max 15pts)
+        score += min(total_forecast_rain * 2, 30)  # 3-day forecast rain (max 30pts)
+        score += min(max_prob * 0.3, 30)           # precipitation probability (max 30pts)
+
+        # Chennai elevation factor — low lying city, higher base risk
+        score = min(score * 1.15, 100)
+        score = round(score)
+
+        # Risk level
+        if score <= 20:
+            level = "Very Low"
+            color = "#22c55e"
+            advice = "No flood risk. Normal conditions."
+            icon = "🟢"
+        elif score <= 40:
+            level = "Low"
+            color = "#84cc16"
+            advice = "Minor risk. Monitor rainfall forecasts."
+            icon = "🟡"
+        elif score <= 60:
+            level = "Moderate"
+            color = "#eab308"
+            advice = "Moderate risk. Avoid low-lying areas during heavy rain."
+            icon = "🟠"
+        elif score <= 80:
+            level = "High"
+            color = "#f97316"
+            advice = "High flood risk. Stay alert. Avoid underpasses and flood-prone zones."
+            icon = "🔴"
+        else:
+            level = "Extreme"
+            color = "#ef4444"
+            advice = "Extreme flood risk! Stay indoors. Avoid all travel if possible."
+            icon = "🚨"
+
+        return {
+            "score": score,
+            "level": level,
+            "color": color,
+            "advice": advice,
+            "icon": icon,
+            "factors": {
+                "current_rainfall_mm": round(current_rain, 1),
+                "humidity_pct": humidity,
+                "forecast_3day_mm": round(total_forecast_rain, 1),
+                "max_precip_probability": max_prob,
+            },
+            "chennai_note": "Chennai is low-lying (6m ASL) with historically high flood vulnerability",
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ════════════════════════════════════════════════════════════
+# /seasonal — Seasonal Comparison for current month
+# ════════════════════════════════════════════════════════════
+@app.get("/seasonal")
+def get_seasonal():
+    """Compare current month's weather against historical averages (last 5 years)."""
+    try:
+        now = datetime.now()
+        current_month = now.month
+        current_year = now.year
+
+        # Fetch historical data for the same month over last 5 years
+        yearly_data = []
+        for year_offset in range(1, 6):
+            year = current_year - year_offset
+            month_start = datetime(year, current_month, 1)
+            # Last day of month
+            if current_month == 12:
+                month_end = datetime(year, 12, 31)
+            else:
+                month_end = datetime(year, current_month + 1, 1) - timedelta(days=1)
+
+            # Don't fetch future dates
+            archive_limit = datetime.now() - timedelta(days=7)
+            if month_end > archive_limit:
+                month_end = archive_limit
+
+            if month_start >= month_end:
+                continue
+
+            url = "https://archive-api.open-meteo.com/v1/archive"
+            params = {
+                "latitude": LAT, "longitude": LON,
+                "start_date": month_start.strftime("%Y-%m-%d"),
+                "end_date": month_end.strftime("%Y-%m-%d"),
+                "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
+                "timezone": "Asia/Kolkata",
+            }
+            try:
+                r = requests.get(url, params=params, timeout=15)
+                r.raise_for_status()
+                d = r.json().get("daily", {})
+                temps_max = [t for t in d.get("temperature_2m_max", []) if t is not None]
+                temps_min = [t for t in d.get("temperature_2m_min", []) if t is not None]
+                precip = [p for p in d.get("precipitation_sum", []) if p is not None]
+                if temps_max:
+                    yearly_data.append({
+                        "year": year,
+                        "avg_max": round(sum(temps_max) / len(temps_max), 1),
+                        "avg_min": round(sum(temps_min) / len(temps_min), 1) if temps_min else None,
+                        "total_precip": round(sum(precip), 1) if precip else 0,
+                    })
+            except Exception:
+                continue
+
+        if not yearly_data:
+            return {"error": "Could not fetch historical data"}
+
+        # Calculate 5-year averages
+        avg_max = round(sum(y["avg_max"] for y in yearly_data) / len(yearly_data), 1)
+        avg_min = round(sum(y["avg_min"] for y in yearly_data if y["avg_min"]) / len(yearly_data), 1)
+        avg_precip = round(sum(y["total_precip"] for y in yearly_data) / len(yearly_data), 1)
+
+        # Fetch current month so far
+        month_start_this_year = datetime(current_year, current_month, 1)
+        current_month_end = min(now - timedelta(days=7), now)
+        current_data = {"avg_max": None, "avg_min": None, "total_precip": None}
+
+        if month_start_this_year < current_month_end:
+            try:
+                r = requests.get("https://archive-api.open-meteo.com/v1/archive", params={
+                    "latitude": LAT, "longitude": LON,
+                    "start_date": month_start_this_year.strftime("%Y-%m-%d"),
+                    "end_date": (now - timedelta(days=7)).strftime("%Y-%m-%d"),
+                    "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
+                    "timezone": "Asia/Kolkata",
+                }, timeout=15)
+                r.raise_for_status()
+                d = r.json().get("daily", {})
+                tm = [t for t in d.get("temperature_2m_max", []) if t is not None]
+                tn = [t for t in d.get("temperature_2m_min", []) if t is not None]
+                pr = [p for p in d.get("precipitation_sum", []) if p is not None]
+                if tm:
+                    current_data = {
+                        "avg_max": round(sum(tm) / len(tm), 1),
+                        "avg_min": round(sum(tn) / len(tn), 1) if tn else None,
+                        "total_precip": round(sum(pr), 1) if pr else 0,
+                    }
+            except Exception:
+                pass
+
+        month_name = now.strftime("%B")
+
+        return {
+            "month": month_name,
+            "year": current_year,
+            "current_month": current_data,
+            "historical_avg": {
+                "avg_max": avg_max,
+                "avg_min": avg_min,
+                "avg_precip": avg_precip,
+                "based_on_years": len(yearly_data),
+            },
+            "yearly_breakdown": yearly_data,
+            "comparison": {
+                "temp_diff": round(current_data["avg_max"] - avg_max, 1) if current_data["avg_max"] else None,
+                "precip_diff": round(current_data["total_precip"] - avg_precip, 1) if current_data["total_precip"] is not None else None,
+                "is_hotter": current_data["avg_max"] > avg_max if current_data["avg_max"] else None,
+                "is_wetter": current_data["total_precip"] > avg_precip if current_data["total_precip"] is not None else None,
+            }
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+
+# ════════════════════════════════════════════════════════════
+# /aqi — Air Quality Index for Chennai (OpenAQ)
+# ════════════════════════════════════════════════════════════
+@app.get("/aqi")
+def get_aqi():
+    """Fetch real AQI data for Chennai from Open-Meteo air quality API."""
+    url = "https://air-quality-api.open-meteo.com/v1/air-quality"
+    params = {
+        "latitude": LAT,
+        "longitude": LON,
+        "current": "pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,european_aqi",
+        "timezone": "Asia/Kolkata",
+    }
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        current = data.get("current", {})
+
+        aqi = current.get("european_aqi", 0)
+
+        # AQI category classification
+        if aqi <= 20:
+            category = "Good"
+            color = "#22c55e"
+            advice = "Air quality is excellent. Perfect for outdoor activities."
+        elif aqi <= 40:
+            category = "Fair"
+            color = "#84cc16"
+            advice = "Air quality is acceptable. Sensitive groups should take care."
+        elif aqi <= 60:
+            category = "Moderate"
+            color = "#eab308"
+            advice = "Moderate pollution. Limit prolonged outdoor exertion."
+        elif aqi <= 80:
+            category = "Poor"
+            color = "#f97316"
+            advice = "Poor air quality. Avoid outdoor activities if possible."
+        elif aqi <= 100:
+            category = "Very Poor"
+            color = "#ef4444"
+            advice = "Very poor air quality. Stay indoors and wear a mask outside."
+        else:
+            category = "Extremely Poor"
+            color = "#7c3aed"
+            advice = "Hazardous conditions. Avoid all outdoor activities."
+
+        return {
+            "aqi": aqi,
+            "category": category,
+            "color": color,
+            "advice": advice,
+            "pm2_5": current.get("pm2_5"),
+            "pm10": current.get("pm10"),
+            "nitrogen_dioxide": current.get("nitrogen_dioxide"),
+            "ozone": current.get("ozone"),
+            "carbon_monoxide": current.get("carbon_monoxide"),
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ════════════════════════════════════════════════════════════
+# /flood-risk — Flood Risk Score for Chennai
+# ════════════════════════════════════════════════════════════
+@app.get("/flood-risk")
+def get_flood_risk():
+    """Calculate flood risk score for Chennai based on rainfall, humidity, and forecast."""
+    try:
+        # Fetch current weather
+        weather_url = "https://api.open-meteo.com/v1/forecast"
+        weather_params = {
+            "latitude": LAT, "longitude": LON,
+            "current": "precipitation,relative_humidity_2m,rain",
+            "daily": "precipitation_sum,precipitation_probability_max",
+            "forecast_days": 3,
+            "timezone": "Asia/Kolkata",
+        }
+        r = requests.get(weather_url, params=weather_params, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        current = data.get("current", {})
+        daily = data.get("daily", {})
+
+        # Flood risk factors
+        current_rain = current.get("rain", 0) or 0
+        current_precip = current.get("precipitation", 0) or 0
+        humidity = current.get("relative_humidity_2m", 0) or 0
+        precip_sums = daily.get("precipitation_sum", [0, 0, 0])
+        precip_probs = daily.get("precipitation_probability_max", [0, 0, 0])
+
+        total_forecast_rain = sum(p for p in precip_sums if p) 
+        max_prob = max(p for p in precip_probs if p) if precip_probs else 0
+
+        # Score calculation (0-100)
+        score = 0
+        score += min(current_rain * 5, 25)        # current rain (max 25pts)
+        score += min(humidity * 0.2, 15)           # humidity (max 15pts)
+        score += min(total_forecast_rain * 2, 30)  # 3-day forecast rain (max 30pts)
+        score += min(max_prob * 0.3, 30)           # precipitation probability (max 30pts)
+
+        # Chennai elevation factor — low lying city, higher base risk
+        score = min(score * 1.15, 100)
+        score = round(score)
+
+        # Risk level
+        if score <= 20:
+            level = "Very Low"
+            color = "#22c55e"
+            advice = "No flood risk. Normal conditions."
+            icon = "🟢"
+        elif score <= 40:
+            level = "Low"
+            color = "#84cc16"
+            advice = "Minor risk. Monitor rainfall forecasts."
+            icon = "🟡"
+        elif score <= 60:
+            level = "Moderate"
+            color = "#eab308"
+            advice = "Moderate risk. Avoid low-lying areas during heavy rain."
+            icon = "🟠"
+        elif score <= 80:
+            level = "High"
+            color = "#f97316"
+            advice = "High flood risk. Stay alert. Avoid underpasses and flood-prone zones."
+            icon = "🔴"
+        else:
+            level = "Extreme"
+            color = "#ef4444"
+            advice = "Extreme flood risk! Stay indoors. Avoid all travel if possible."
+            icon = "🚨"
+
+        return {
+            "score": score,
+            "level": level,
+            "color": color,
+            "advice": advice,
+            "icon": icon,
+            "factors": {
+                "current_rainfall_mm": round(current_rain, 1),
+                "humidity_pct": humidity,
+                "forecast_3day_mm": round(total_forecast_rain, 1),
+                "max_precip_probability": max_prob,
+            },
+            "chennai_note": "Chennai is low-lying (6m ASL) with historically high flood vulnerability",
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ════════════════════════════════════════════════════════════
+# /seasonal — Seasonal Comparison for current month
+# ════════════════════════════════════════════════════════════
+@app.get("/seasonal")
+def get_seasonal():
+    """Compare current month's weather against historical averages (last 5 years)."""
+    try:
+        now = datetime.now()
+        current_month = now.month
+        current_year = now.year
+
+        # Fetch historical data for the same month over last 5 years
+        yearly_data = []
+        for year_offset in range(1, 6):
+            year = current_year - year_offset
+            month_start = datetime(year, current_month, 1)
+            # Last day of month
+            if current_month == 12:
+                month_end = datetime(year, 12, 31)
+            else:
+                month_end = datetime(year, current_month + 1, 1) - timedelta(days=1)
+
+            # Don't fetch future dates
+            archive_limit = datetime.now() - timedelta(days=7)
+            if month_end > archive_limit:
+                month_end = archive_limit
+
+            if month_start >= month_end:
+                continue
+
+            url = "https://archive-api.open-meteo.com/v1/archive"
+            params = {
+                "latitude": LAT, "longitude": LON,
+                "start_date": month_start.strftime("%Y-%m-%d"),
+                "end_date": month_end.strftime("%Y-%m-%d"),
+                "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
+                "timezone": "Asia/Kolkata",
+            }
+            try:
+                r = requests.get(url, params=params, timeout=15)
+                r.raise_for_status()
+                d = r.json().get("daily", {})
+                temps_max = [t for t in d.get("temperature_2m_max", []) if t is not None]
+                temps_min = [t for t in d.get("temperature_2m_min", []) if t is not None]
+                precip = [p for p in d.get("precipitation_sum", []) if p is not None]
+                if temps_max:
+                    yearly_data.append({
+                        "year": year,
+                        "avg_max": round(sum(temps_max) / len(temps_max), 1),
+                        "avg_min": round(sum(temps_min) / len(temps_min), 1) if temps_min else None,
+                        "total_precip": round(sum(precip), 1) if precip else 0,
+                    })
+            except Exception:
+                continue
+
+        if not yearly_data:
+            return {"error": "Could not fetch historical data"}
+
+        # Calculate 5-year averages
+        avg_max = round(sum(y["avg_max"] for y in yearly_data) / len(yearly_data), 1)
+        avg_min = round(sum(y["avg_min"] for y in yearly_data if y["avg_min"]) / len(yearly_data), 1)
+        avg_precip = round(sum(y["total_precip"] for y in yearly_data) / len(yearly_data), 1)
+
+        # Fetch current month so far
+        month_start_this_year = datetime(current_year, current_month, 1)
+        current_month_end = min(now - timedelta(days=7), now)
+        current_data = {"avg_max": None, "avg_min": None, "total_precip": None}
+
+        if month_start_this_year < current_month_end:
+            try:
+                r = requests.get("https://archive-api.open-meteo.com/v1/archive", params={
+                    "latitude": LAT, "longitude": LON,
+                    "start_date": month_start_this_year.strftime("%Y-%m-%d"),
+                    "end_date": (now - timedelta(days=7)).strftime("%Y-%m-%d"),
+                    "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
+                    "timezone": "Asia/Kolkata",
+                }, timeout=15)
+                r.raise_for_status()
+                d = r.json().get("daily", {})
+                tm = [t for t in d.get("temperature_2m_max", []) if t is not None]
+                tn = [t for t in d.get("temperature_2m_min", []) if t is not None]
+                pr = [p for p in d.get("precipitation_sum", []) if p is not None]
+                if tm:
+                    current_data = {
+                        "avg_max": round(sum(tm) / len(tm), 1),
+                        "avg_min": round(sum(tn) / len(tn), 1) if tn else None,
+                        "total_precip": round(sum(pr), 1) if pr else 0,
+                    }
+            except Exception:
+                pass
+
+        month_name = now.strftime("%B")
+
+        return {
+            "month": month_name,
+            "year": current_year,
+            "current_month": current_data,
+            "historical_avg": {
+                "avg_max": avg_max,
+                "avg_min": avg_min,
+                "avg_precip": avg_precip,
+                "based_on_years": len(yearly_data),
+            },
+            "yearly_breakdown": yearly_data,
+            "comparison": {
+                "temp_diff": round(current_data["avg_max"] - avg_max, 1) if current_data["avg_max"] else None,
+                "precip_diff": round(current_data["total_precip"] - avg_precip, 1) if current_data["total_precip"] is not None else None,
+                "is_hotter": current_data["avg_max"] > avg_max if current_data["avg_max"] else None,
+                "is_wetter": current_data["total_precip"] > avg_precip if current_data["total_precip"] is not None else None,
+            }
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ════════════════════════════════════════════════════════════
 # /ask — INTELLIGENT QUERY ENGINE v2
 # Understands dates, fetches precise data, focused answers.
 # ════════════════════════════════════════════════════════════
@@ -1723,4 +2254,3 @@ def ask_climai(q: str = "weather today"):
 if __name__ == "__main__":
     import uvicorn  # type: ignore[import]
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

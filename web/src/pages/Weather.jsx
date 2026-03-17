@@ -1,21 +1,37 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import {
-    AreaChart, Area, BarChart, Bar,
-    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    AreaChart, Area, BarChart, Bar, RadialBarChart, RadialBar,
+    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 
 const TT = { backgroundColor: '#111', border: '1px solid #1e1e1e', borderRadius: '6px', color: '#e5e5e5', fontSize: '11px', padding: '6px 10px' };
 
 export default function Weather() {
-    const [weather, setWeather] = useState(null);
+    const [weather,  setWeather]  = useState(null);
     const [forecast, setForecast] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [aqi,      setAqi]      = useState(null);
+    const [flood,    setFlood]    = useState(null);
+    const [seasonal, setSeasonal] = useState(null);
+    const [loading,  setLoading]  = useState(true);
 
     useEffect(() => {
-        Promise.all([api.getWeather(), api.getForecast()])
-            .then(([w, f]) => { setWeather(w); setForecast(f); })
-            .finally(() => setLoading(false));
+        Promise.all([
+            api.getWeather(),
+            api.getForecast(),
+            api.getAQI(),
+            api.getFloodRisk(),
+            api.getSeasonal(),
+        ])
+        .then(([w, f, a, fl, s]) => {
+            setWeather(w);
+            setForecast(f);
+            setAqi(a?.error ? null : a);
+            setFlood(fl?.error ? null : fl);
+            setSeasonal(s?.error ? null : s);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
     }, []);
 
     if (loading) return <Loader />;
@@ -33,14 +49,14 @@ export default function Weather() {
             {/* KPI Grid */}
             <div className="grid grid-cols-4 gap-2">
                 {[
-                    { icon: '🌡', label: 'Temperature', value: weather?.temperature, unit: '°C', color: '#3b82f6' },
-                    { icon: '🤒', label: 'Feels Like', value: weather?.feels_like, unit: '°C', color: '#f97316' },
-                    { icon: '💧', label: 'Humidity', value: weather?.humidity, unit: '%', color: '#22c55e' },
-                    { icon: '💨', label: 'Wind', value: weather?.wind_speed, unit: 'km/h', color: '#06b6d4' },
-                    { icon: '🌬', label: 'Gusts', value: weather?.wind_gusts, unit: 'km/h', color: '#a855f7' },
-                    { icon: '☁', label: 'Clouds', value: weather?.cloud_cover, unit: '%', color: '#eab308' },
-                    { icon: '📊', label: 'Pressure', value: weather?.pressure, unit: 'hPa', color: '#f97316' },
-                    { icon: '🧭', label: 'Direction', value: weather?.wind_direction, unit: '', color: '#3b82f6' },
+                    { icon: '🌡', label: 'Temperature', value: weather?.temperature,  unit: '°C',  color: '#3b82f6' },
+                    { icon: '🤒', label: 'Feels Like',  value: weather?.feels_like,   unit: '°C',  color: '#f97316' },
+                    { icon: '💧', label: 'Humidity',    value: weather?.humidity,      unit: '%',   color: '#22c55e' },
+                    { icon: '💨', label: 'Wind',        value: weather?.wind_speed,    unit: 'km/h',color: '#06b6d4' },
+                    { icon: '🌬', label: 'Gusts',       value: weather?.wind_gusts,    unit: 'km/h',color: '#a855f7' },
+                    { icon: '☁',  label: 'Clouds',      value: weather?.cloud_cover,   unit: '%',   color: '#eab308' },
+                    { icon: '📊', label: 'Pressure',    value: weather?.pressure,      unit: 'hPa', color: '#f97316' },
+                    { icon: '🧭', label: 'Direction',   value: weather?.wind_direction,unit: '',    color: '#3b82f6' },
                 ].map((m, i) => (
                     <div key={i} className="card flex flex-col justify-center h-[72px]">
                         <div className="text-[10px] mb-0.5" style={{ color: '#555' }}>{m.icon} {m.label}</div>
@@ -51,6 +67,176 @@ export default function Weather() {
                     </div>
                 ))}
             </div>
+
+            {/* ── AQI + FLOOD RISK ROW ── */}
+            <div className="grid grid-cols-2 gap-2">
+
+                {/* AQI Card */}
+                <div className="card" style={{ padding: '14px' }}>
+                    <div className="text-[12px] font-medium mb-1" style={{ color: '#e5e5e5' }}>🌫 Air Quality Index</div>
+                    <div className="text-[9px] mb-3" style={{ color: '#444' }}>EUROPEAN AQI · OPEN-METEO</div>
+                    {aqi ? (
+                        <>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="text-[42px] font-bold" style={{ color: aqi.color }}>{aqi.aqi}</div>
+                                <div>
+                                    <div className="text-[13px] font-semibold" style={{ color: aqi.color }}>{aqi.category}</div>
+                                    <div className="text-[9px] mt-0.5" style={{ color: '#555' }}>{aqi.advice}</div>
+                                </div>
+                            </div>
+                            {/* AQI bar */}
+                            <div className="relative w-full h-[6px] rounded-full mb-3" style={{ background: '#1a1a2e' }}>
+                                <div className="absolute top-0 left-0 h-full rounded-full transition-all"
+                                    style={{ width: `${Math.min(aqi.aqi, 100)}%`, background: aqi.color }} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-1.5">
+                                {[
+                                    { label: 'PM2.5', value: aqi.pm2_5, unit: 'μg/m³', color: '#f97316' },
+                                    { label: 'PM10',  value: aqi.pm10,  unit: 'μg/m³', color: '#eab308' },
+                                    { label: 'NO₂',   value: aqi.nitrogen_dioxide, unit: 'μg/m³', color: '#a855f7' },
+                                    { label: 'O₃',    value: aqi.ozone, unit: 'μg/m³', color: '#06b6d4' },
+                                ].map((p, i) => (
+                                    <div key={i} className="rounded p-1.5" style={{ background: '#0d0d1a' }}>
+                                        <div className="text-[8px]" style={{ color: '#444' }}>{p.label}</div>
+                                        <div className="text-[13px] font-bold" style={{ color: p.color }}>
+                                            {p.value != null ? Math.round(p.value) : '--'}
+                                            <span className="text-[8px] ml-0.5" style={{ color: '#444' }}>{p.unit}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="text-[11px] italic" style={{ color: '#555' }}>AQI data unavailable</div>
+                    )}
+                </div>
+
+                {/* Flood Risk Card */}
+                <div className="card" style={{ padding: '14px' }}>
+                    <div className="text-[12px] font-medium mb-1" style={{ color: '#e5e5e5' }}>🌊 Flood Risk Score</div>
+                    <div className="text-[9px] mb-3" style={{ color: '#444' }}>REAL-TIME RISK · CHENNAI (6M ASL)</div>
+                    {flood ? (
+                        <>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="text-[42px] font-bold" style={{ color: flood.color }}>{flood.score}</div>
+                                <div>
+                                    <div className="text-[13px] font-semibold" style={{ color: flood.color }}>{flood.icon} {flood.level}</div>
+                                    <div className="text-[9px] mt-0.5" style={{ color: '#555' }}>{flood.advice}</div>
+                                </div>
+                            </div>
+                            {/* Flood risk bar */}
+                            <div className="relative w-full h-[6px] rounded-full mb-3" style={{ background: '#1a1a2e' }}>
+                                <div className="absolute top-0 left-0 h-full rounded-full transition-all"
+                                    style={{ width: `${flood.score}%`, background: flood.color }} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-1.5">
+                                {[
+                                    { label: 'Current Rain', value: flood.factors?.current_rainfall_mm, unit: 'mm', color: '#06b6d4' },
+                                    { label: 'Humidity',     value: flood.factors?.humidity_pct,         unit: '%',  color: '#3b82f6' },
+                                    { label: '3-Day Rain',   value: flood.factors?.forecast_3day_mm,     unit: 'mm', color: '#a855f7' },
+                                    { label: 'Precip Prob',  value: flood.factors?.max_precip_probability,unit: '%', color: '#eab308' },
+                                ].map((p, i) => (
+                                    <div key={i} className="rounded p-1.5" style={{ background: '#0d0d1a' }}>
+                                        <div className="text-[8px]" style={{ color: '#444' }}>{p.label}</div>
+                                        <div className="text-[13px] font-bold" style={{ color: p.color }}>
+                                            {p.value != null ? p.value : '--'}
+                                            <span className="text-[8px] ml-0.5" style={{ color: '#444' }}>{p.unit}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="text-[8px] mt-2" style={{ color: '#333' }}>{flood.chennai_note}</div>
+                        </>
+                    ) : (
+                        <div className="text-[11px] italic" style={{ color: '#555' }}>Flood data unavailable</div>
+                    )}
+                </div>
+            </div>
+
+            {/* ── SEASONAL COMPARISON ── */}
+            {seasonal && (
+                <div className="card" style={{ padding: '14px' }}>
+                    <div className="text-[12px] font-medium mb-1" style={{ color: '#e5e5e5' }}>📅 Seasonal Comparison</div>
+                    <div className="text-[9px] mb-3" style={{ color: '#444' }}>
+                        {seasonal.month?.toUpperCase()} {seasonal.year} vs {seasonal.historical_avg?.based_on_years}-YEAR AVERAGE
+                    </div>
+
+                    {/* Comparison summary */}
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                        {[
+                            {
+                                label: 'This Month Avg Max',
+                                value: seasonal.current_month?.avg_max,
+                                unit: '°C',
+                                color: '#f97316',
+                                sub: `Avg: ${seasonal.historical_avg?.avg_max}°C`,
+                                diff: seasonal.comparison?.temp_diff,
+                            },
+                            {
+                                label: 'This Month Avg Min',
+                                value: seasonal.current_month?.avg_min,
+                                unit: '°C',
+                                color: '#06b6d4',
+                                sub: `Avg: ${seasonal.historical_avg?.avg_min}°C`,
+                                diff: null,
+                            },
+                            {
+                                label: 'Total Rainfall',
+                                value: seasonal.current_month?.total_precip,
+                                unit: 'mm',
+                                color: '#3b82f6',
+                                sub: `Avg: ${seasonal.historical_avg?.avg_precip}mm`,
+                                diff: seasonal.comparison?.precip_diff,
+                            },
+                        ].map((s, i) => (
+                            <div key={i} className="rounded p-2.5" style={{ background: '#0d0d1a' }}>
+                                <div className="text-[8px] mb-1" style={{ color: '#444' }}>{s.label}</div>
+                                <div className="text-[18px] font-bold" style={{ color: s.color }}>
+                                    {s.value ?? '--'}<span className="text-[9px] ml-0.5" style={{ color: '#444' }}>{s.unit}</span>
+                                </div>
+                                <div className="text-[8px]" style={{ color: '#444' }}>{s.sub}</div>
+                                {s.diff != null && (
+                                    <div className="text-[9px] font-medium mt-0.5" style={{ color: s.diff > 0 ? '#ef4444' : '#22c55e' }}>
+                                        {s.diff > 0 ? '▲' : '▼'} {Math.abs(s.diff)}{s.unit} vs avg
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Year by year bar chart */}
+                    <div className="text-[9px] mb-2" style={{ color: '#444' }}>YEAR-BY-YEAR MAX TEMPERATURE</div>
+                    <ResponsiveContainer width="100%" height={120}>
+                        <BarChart data={[
+                            ...(seasonal.yearly_breakdown || []).map(y => ({
+                                year: y.year,
+                                temp: y.avg_max,
+                                precip: y.total_precip,
+                            })),
+                            ...(seasonal.current_month?.avg_max ? [{
+                                year: seasonal.year,
+                                temp: seasonal.current_month.avg_max,
+                                precip: seasonal.current_month.total_precip,
+                                current: true,
+                            }] : [])
+                        ].sort((a, b) => a.year - b.year)}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1e1e1e" vertical={false} />
+                            <XAxis dataKey="year" stroke="#555" fontSize={9} tickLine={false} />
+                            <YAxis stroke="#555" fontSize={9} tickLine={false} unit="°" />
+                            <Tooltip contentStyle={TT} />
+                            <Bar dataKey="temp" name="Avg Max °C" radius={[2, 2, 0, 0]}>
+                                {[...(seasonal.yearly_breakdown || []), seasonal.current_month?.avg_max ? { year: seasonal.year } : null]
+                                    .filter(Boolean)
+                                    .sort((a, b) => a.year - b.year)
+                                    .map((entry, i) => (
+                                        <Cell key={i} fill={entry.year === seasonal.year ? '#f97316' : '#3b82f6'} opacity={entry.year === seasonal.year ? 1 : 0.6} />
+                                    ))
+                                }
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
 
             {/* Charts */}
             <div className="grid grid-cols-2 gap-2">

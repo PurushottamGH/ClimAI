@@ -14,6 +14,9 @@ export const api = {
     getCyclones: () => axios.get(`${API_BASE}/cyclones`).then(r => r.data),
     getTsunamis: () => axios.get(`${API_BASE}/tsunamis`).then(r => r.data),
     getTemperatureMap: () => axios.get(`${API_BASE}/temperature-map`).then(r => r.data),
+    getAQI: () => axios.get(`${API_BASE}/aqi`).then(r => r.data),
+    getFloodRisk: () => axios.get(`${API_BASE}/flood-risk`).then(r => r.data),
+    getSeasonal: () => axios.get(`${API_BASE}/seasonal`).then(r => r.data),
     getReport: (days = 7) => axios.get(`${API_BASE}/report?days=${days}`).then(r => r.data),
     askClimAI: (query) => axios.get(`${API_BASE}/ask?q=${encodeURIComponent(query)}`).then(r => r.data),
 };
