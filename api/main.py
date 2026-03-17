@@ -13,6 +13,7 @@ import numpy as np
 import random
 import re as _re
 import logging
+from global_land_mask import globe  # Moves to top for reliability
 
 from planner import plan_query
 from executor import execute_plan
@@ -901,71 +902,69 @@ def get_temperature_map():
     global _temp_map_cache, _temp_map_timestamp
     import random
     import math
-    from global_land_mask import globe
+    from fastapi.responses import JSONResponse
 
-    # Return cached version if less than 1 hour old (temp doesn't change that fast)
+    # Return cached version if less than 1 hour old
     if _temp_map_cache and _temp_map_timestamp:
-        age = (datetime.now() - _temp_map_timestamp).seconds
+        age = (datetime.now() - _temp_map_timestamp).total_seconds()
         if age < 3600:
-            return _temp_map_cache
+            return JSONResponse(
+                content=_temp_map_cache,
+                headers={"Access-Control-Allow-Origin": "*"}
+            )
 
-    # 4-degree grid provides better resolution while remaining memory-safe (~4000 points)
-    STEP = 4
-    all_points = []
-    
-    # Get current month for seasonal variation
-    month = datetime.now().month
+    try:
+        # STEP = 10 provides a balance between detail and reliability
+        STEP = 10
+        all_points = []
+        month = datetime.now().month
 
-    for lat in range(-60, 75, STEP):
-        # Latitude base temperature (hot at equator, cold at poles)
-        # Shift the "heat peak" slightly based on the month (Northern summer vs Southern summer)
-        peak_lat = 15 * math.sin(math.radians((month - 3) * 30))
-        base_lat_temp = 32 - abs(lat - peak_lat) * 0.55
-        
-        for lon in range(-180, 180, STEP):
-            # 1. Check if it's land
-            is_land = globe.is_land(lat, lon)
+        for lat in range(-60, 75, STEP):
+            peak_lat = 15 * math.sin(math.radians((month - 3) * 30))
+            base_lat_temp = 32 - abs(lat - peak_lat) * 0.55
             
-            # 2. Add Longitudinal variation (simulating continentality and oceanic influence)
-            # Continents tend to be warmer/colder than oceans at the same latitude
-            lon_variation = math.cos(math.radians(lon - 100)) * 3
-            
-            # 3. Add noise
-            noise = random.uniform(-2.5, 2.5)
-            
-            # 4. Final simulation
-            temp = base_lat_temp + lon_variation + noise
-            
-            # Land is usually warmer during the day (assuming daytime simulation)
-            if is_land:
-                temp += 4
-            else:
-                temp -= 2
+            for lon in range(-180, 180, STEP):
+                is_land = globe.is_land(lat, lon)
+                lon_variation = math.cos(math.radians(lon - 100)) * 3
+                noise = random.uniform(-2.5, 2.5)
+                temp = base_lat_temp + lon_variation + noise
                 
-            # Only include points that make sense (avoiding extreme spikes)
-            temp = max(-45, min(55, temp))
+                if is_land:
+                    temp += 4
+                else:
+                    temp -= 2
+                    
+                temp = max(-45, min(55, temp))
 
-            # We prioritize showing data on land for better "Climate" look
-            # But we include some ocean buffer for the heatmap to "bleed" naturally
-            if is_land or (abs(lat) < 40 and random.random() > 0.7):
-                all_points.append({
-                    "lat": lat,
-                    "lon": lon,
-                    "temp_c": round(temp, 1)
-                })
+                if is_land or (abs(lat) < 40 and random.random() > 0.7):
+                    all_points.append({
+                        "lat": lat,
+                        "lon": lon,
+                        "temp_c": round(temp, 1)
+                    })
 
-    result = {
-        "points": all_points,
-        "count": len(all_points),
-        "timestamp": datetime.now().isoformat(),
-        "status": "synchronized_climate_model"
-    }
+        result = {
+            "points": all_points,
+            "count": len(all_points),
+            "timestamp": datetime.now().isoformat(),
+            "status": "synchronized_climate_model"
+        }
 
-    # Cache the result
-    _temp_map_cache = result
-    _temp_map_timestamp = datetime.now()
+        # Cache the result
+        _temp_map_cache = result
+        _temp_map_timestamp = datetime.now()
 
-    return result
+        return JSONResponse(
+            content=result,
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
+    except Exception as e:
+        logger.error(f"Temperature map error: {str(e)}")
+        return JSONResponse(
+            content={"error": str(e), "points": [], "count": 0},
+            status_code=500,
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
 
 
 # ════════════════════════════════════════════════════════════
