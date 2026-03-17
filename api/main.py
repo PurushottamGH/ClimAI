@@ -48,6 +48,21 @@ def ping():
 LAT = 13.0827
 LON = 80.2707
 
+# ── Simple in-memory cache to prevent Open-Meteo 429 rate limits ──
+_cache: dict = {}
+_cache_ttl: dict = {}
+
+def _get_cache(key: str, ttl_seconds: int = 300):
+    if key in _cache and key in _cache_ttl:
+        age = (datetime.now() - _cache_ttl[key]).total_seconds()
+        if age < ttl_seconds:
+            return _cache[key]
+    return None
+
+def _set_cache(key: str, value):
+    _cache[key] = value
+    _cache_ttl[key] = datetime.now()
+
 
 # ════════════════════════════════
 # /weather — Current conditions (Open Meteo)
@@ -55,6 +70,8 @@ LON = 80.2707
 @app.get("/weather")
 def get_weather():
     """Current weather for Chennai."""
+    cached = _get_cache("weather", ttl_seconds=120)
+    if cached: return cached
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
         "latitude": LAT,
@@ -74,7 +91,7 @@ def get_weather():
         idx = round(deg / 22.5) % 16
         wind_dir = directions[idx]
 
-        return {
+        result = {
             "temperature": current.get("temperature_2m"),
             "feels_like": current.get("apparent_temperature"),
             "humidity": current.get("relative_humidity_2m"),
@@ -87,6 +104,8 @@ def get_weather():
             "precipitation": current.get("precipitation"),
             "rain": current.get("rain"),
         }
+        _set_cache("weather", result)
+        return result
     except Exception as e:
         return {"error": str(e)}
 
@@ -97,6 +116,8 @@ def get_weather():
 @app.get("/forecast")
 def get_forecast():
     """7-day daily forecast for Chennai."""
+    cached = _get_cache("forecast", 300)
+    if cached: return cached
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
         "latitude": LAT,
@@ -139,7 +160,9 @@ def get_forecast():
                 "wind_speed": h_winds[i] if i < len(h_winds) else None,
             })
 
-        return {"daily": days, "hourly": hourly_data}
+        result = {"daily": days, "hourly": hourly_data}
+        _set_cache("forecast", result)
+        return result
     except Exception as e:
         return {"error": str(e)}
 
@@ -951,6 +974,8 @@ def get_temperature_map():
 @app.get("/aqi")
 def get_aqi():
     """Fetch real AQI data for Chennai from Open-Meteo air quality API."""
+    cached = _get_cache("aqi", 300)
+    if cached: return cached
     url = "https://air-quality-api.open-meteo.com/v1/air-quality"
     params = {
         "latitude": LAT,
@@ -1013,6 +1038,8 @@ def get_aqi():
 @app.get("/flood-risk")
 def get_flood_risk():
     """Calculate flood risk score for Chennai based on rainfall, humidity, and forecast."""
+    cached = _get_cache("flood_risk", 300)
+    if cached: return cached
     try:
         # Fetch current weather
         weather_url = "https://api.open-meteo.com/v1/forecast"
