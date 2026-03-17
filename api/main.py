@@ -13,7 +13,7 @@ import numpy as np
 import random
 import re as _re
 import logging
-from global_land_mask import globe  # Moves to top for reliability
+# from global_land_mask import globe  # Removed from top to save startup memory
 
 from planner import plan_query
 from executor import execute_plan
@@ -27,7 +27,7 @@ _handler = logging.StreamHandler()
 _handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
 logger.addHandler(_handler)
 
-app = FastAPI(title="ClimAI API", version="3.5-pro")
+app = FastAPI(title="ClimAI API", version="3.5.2-pro")
 
 # ── CORS Configuration ──────────────────────────────────────────────────────
 # Using the standard FastAPI CORSMiddleware. 
@@ -914,17 +914,37 @@ def get_temperature_map():
             )
 
     try:
-        # STEP = 10 provides a balance between detail and reliability
-        STEP = 10
+        # STEP = 8 is a good compromise for Render's memory limits
+        STEP = 8
         all_points = []
         month = datetime.now().month
+
+        # Try to use globe, but have a fallback ready to prevent 502/crash
+        globe = None
+        try:
+            from global_land_mask import globe
+        except Exception:
+            logger.warning("global_land_mask not available, using mathematical land-approximation")
 
         for lat in range(-60, 75, STEP):
             peak_lat = 15 * math.sin(math.radians((month - 3) * 30))
             base_lat_temp = 32 - abs(lat - peak_lat) * 0.55
             
             for lon in range(-180, 180, STEP):
-                is_land = globe.is_land(lat, lon)
+                # Land approximation if globe is missing
+                # Simplistic but visual enough: Continents roughly in these boxes
+                if globe:
+                    is_land = globe.is_land(lat, lon)
+                else:
+                    # Very rough continental check for visual fallback
+                    is_land = (
+                        (6 < lat < 70 and -10 < lon < 150) or   # Eurasia
+                        (-35 < lat < 37 and -20 < lon < 50) or  # Africa
+                        (15 < lat < 72 and -168 < lon < -52) or # N. America
+                        (-56 < lat < 13 and -82 < lon < -34) or # S. America
+                        (-44 < lat < -10 and 112 < lon < 154)   # Australia
+                    )
+
                 lon_variation = math.cos(math.radians(lon - 100)) * 3
                 noise = random.uniform(-2.5, 2.5)
                 temp = base_lat_temp + lon_variation + noise
@@ -947,7 +967,7 @@ def get_temperature_map():
             "points": all_points,
             "count": len(all_points),
             "timestamp": datetime.now().isoformat(),
-            "status": "synchronized_climate_model"
+            "status": "synchronized_climate_model" if globe else "simulated_fallback_model"
         }
 
         # Cache the result
@@ -960,9 +980,14 @@ def get_temperature_map():
         )
     except Exception as e:
         logger.error(f"Temperature map error: {str(e)}")
+        # Ultimate fallback with minimal points to ensure visuals never "die"
+        fallback_res = {
+            "points": [{"lat": 13, "lon": 80, "temp_c": 30}],
+            "count": 1,
+            "error": str(e)
+        }
         return JSONResponse(
-            content={"error": str(e), "points": [], "count": 0},
-            status_code=500,
+            content=fallback_res,
             headers={"Access-Control-Allow-Origin": "*"}
         )
 
