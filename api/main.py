@@ -901,14 +901,14 @@ def get_temperature_map():
         if age < 3600:
             return _temp_map_cache
 
-    # 4-degree grid provides better resolution while remaining memory-safe (~4000 points)
-    STEP = 4
+    # 2-degree grid provides excellent resolution while remaining very fast (~12000 points)
+    STEP = 2
     all_points = []
     
     # Get current month for seasonal variation
     month = datetime.now().month
 
-    for lat in range(-60, 75, STEP):
+    for lat in range(-65, 80, STEP):
         # Latitude base temperature (hot at equator, cold at poles)
         # Shift the "heat peak" slightly based on the month (Northern summer vs Southern summer)
         peak_lat = 15 * math.sin(math.radians((month - 3) * 30))
@@ -939,7 +939,6 @@ def get_temperature_map():
 
             # We prioritize showing data on land for better "Climate" look
             # But we include some ocean buffer for the heatmap to "bleed" naturally
-            if is_land or (abs(lat) < 40 and random.random() > 0.7):
                 all_points.append({
                     "lat": lat,
                     "lon": lon,

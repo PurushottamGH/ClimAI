@@ -6,6 +6,7 @@ import EarthquakeCharts from './components/EarthquakeCharts';
 import CycloneCharts from './components/CycloneCharts';
 import TsunamiCharts from './components/TsunamiCharts';
 import TemperatureCharts from './components/TemperatureCharts';
+import Weather from './pages/Weather';
 import EventsTimeline from './components/EventsTimeline';
 import XaiPanel from './components/XaiPanel';
 import TopNavigation from './components/TopNavigation';
@@ -85,10 +86,11 @@ export default function App() {
             </div>
           )}
         </div>
-        <div className={`panel-bottom ${category === 'earthquake' ? 'eq-dashboard-active' : ''}`}>
+        <div className={`panel-bottom ${category === 'earthquake' ? 'eq-dashboard-active' : ''} ${category === 'weather' ? 'weather-active' : ''}`}>
           {category === 'earthquake' && <EarthquakeCharts data={quakeData} />}
           {category === 'cyclone' && <CycloneCharts data={cycloneData} />}
           {category === 'tsunami' && <TsunamiCharts data={tsunamiData} />}
+          {category === 'weather' && <Weather />}
           {category === 'temperature' && <TemperatureCharts data={tempData} />}
         </div>
       </div>

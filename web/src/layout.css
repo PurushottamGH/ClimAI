@@ -86,6 +86,14 @@
     height: 240px;
 }
 
+/* ── Weather Dashboard Override ── */
+.panel-bottom.weather-active {
+    height: 60vh;
+    min-height: 400px;
+    overflow-y: auto;
+    padding-bottom: 40px;
+}
+
 /* ── Placeholder content ── */
 .panel-placeholder {
     width: 100%;
@@ -175,4 +183,61 @@
     text-transform: uppercase;
     color: #a0aec0;
     margin-bottom: 12px;
+}
+
+/* ── New Utility Styles for Weather & Analysis ── */
+.card {
+    background: rgba(16, 18, 24, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    background: rgba(22, 24, 32, 0.7);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, #fff 0%, #a0aec0 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.space-y-3 > * + * {
+    margin-top: 12px;
+}
+
+/* ── Heatmap Tooltip fixes ── */
+.deckgl-tooltip {
+    z-index: 1000 !important;
+    background: #0d0d1a !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+
+.tt-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 4px;
+}
+
+.tt-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 2px;
+}
+
+.tt-sub {
+    font-size: 9px;
+    color: #444;
 }

@@ -248,9 +248,11 @@ export default function WorldMap({
         ['linear'],
         ['get', 'temp'],
         -30, 0,
-        50, 1
+        0, 0.4,
+        25, 0.8,
+        50, 1.2
       ],
-      'heatmap-intensity': 1,
+      'heatmap-intensity': 3,
       'heatmap-color': [
         'interpolate',
         ['linear'],
@@ -263,8 +265,8 @@ export default function WorldMap({
         0.9, 'rgb(250,204,21)',
         1, 'rgb(252,255,164)'
       ],
-      'heatmap-radius': 40,
-      'heatmap-opacity': 0.6
+      'heatmap-radius': 60,
+      'heatmap-opacity': 0.7
     }
   };
 
