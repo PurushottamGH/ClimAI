@@ -1,5 +1,8 @@
 from date_utils import parse_date
 import re
+import json
+import logging
+from groq_llm import client as groq_client # Reuse the existing Groq client
 
 KNOWN_CYCLONES = ["michaung", "mandous", "nivar", "gaja", "vardah", "thane", "nisha",
                   "fani", "amphan", "hudhud", "phailin", "laila", "jal"]
@@ -110,6 +113,7 @@ def classify_query(query: str):
 def extract_query_context(query: str):
     """
     Extract structured context from a natural-language query.
+    Used as fallback if LLM extraction fails.
     """
     q = _normalize_query(query.lower().strip())
     
@@ -145,16 +149,74 @@ def extract_query_context(query: str):
         "wants_comparison": wants_comparison
     }
 
+def extract_intent_with_llm(query: str) -> dict:
+    """
+    Uses LLM to extract intents and context, fixing typos automatically.
+    """
+    system_prompt = """You are an intent classifier for a climate and disaster tracking app.
+    Given a user query, you must extract their intent and basic context.
+    The query may contain severe severe typos or bad grammar. You must figure out what they mean.
+    
+    Allowed intents: weather, weather_history, weather_comparison, prediction, cyclone, cyclone_history, cyclone_prediction, earthquake, tsunami, disaster.
+    
+    Output exactly valid JSON in this format:
+    {
+        "intents": ["list", "of", "intents"],
+        "context": {
+            "cyclone_name": null, // string if mentioned
+            "year": null, // int if mentioned
+            "location": null, // string if mentioned
+            "wants_recent": false, // boolean
+            "wants_comparison": false // boolean
+        }
+    }
+    """
+    
+    try:
+        response = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Query: {query}"}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.1,
+            max_tokens=200
+        )
+        result = json.loads(response.choices[0].message.content)
+        # Ensure it has the expected structure
+        if "intents" not in result or "context" not in result:
+             raise ValueError("LLM returned malformed JSON structure")
+        return result
+    except Exception as e:
+        import traceback
+        logging.error(f"LLM extraction failed: {e}. Traceback: {traceback.format_exc()}")
+        return None
+
 def plan_query(query: str):
     """
-    Create a deterministic execution plan.
+    Create a deterministic execution plan, using LLM for typo-tolerant intent extraction.
+    Falls back to regex parsing if the LLM fails.
     """
-    intents = classify_query(query)
-    context = extract_query_context(query)
+    # 1. Try LLM Extraction First
+    llm_result = extract_intent_with_llm(query)
+    
+    if llm_result:
+        intents = llm_result.get("intents", [])
+        context = llm_result.get("context", {})
+        # Safety fallback if LLM returns empty intents despite succeeding
+        if not intents:
+             intents = classify_query(query)
+    else:
+        # 2. Fallback to Regex
+        logging.warning("Falling back to regex intent classification")
+        intents = classify_query(query)
+        context = extract_query_context(query)
+        
     date_val = parse_date(query)
     
-    # Select the primary intent
-    # Priorhesize comparison or historical/cyclone if detected
+    # 3. Select the primary intent
+    # Prioritize comparison or historical/cyclone if detected
     primary_intent = "weather"
     if "weather_comparison" in intents:
         primary_intent = "weather_comparison"
