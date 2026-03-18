@@ -20,11 +20,6 @@ def _ensure_datetime(d):
 
 
 def _infer_past_date_from_query(query: str):
-    """
-    Fallback: if query contains an explicit past year (e.g. 2025),
-    resolve to today's month/day in that year.
-    Returns a datetime or None.
-    """
     current_year = datetime.now().year
     m = re.search(r'\b(19\d{2}|20\d{2})\b', query.lower())
     if m:
@@ -39,19 +34,12 @@ def _infer_past_date_from_query(query: str):
 
 
 def _extract_all_past_years(query: str):
-    """
-    Extract ALL past years mentioned in a query, including ranges (e.g., 2021 to 2025).
-    Returns a list of datetime objects for each past year found, using today's month/day.
-    Used by the comparison route to fetch multiple historical datasets.
-    """
     current_year = datetime.now().year
     now = datetime.now()
     q = query.lower()
-    
     seen = set()
     years_to_process = []
 
-    # First, detect explicit ranges like "2021 to 2025" or "2021-2025"
     range_matches = re.finditer(r'\b(19\d{2}|20\d{2})\s*(?:to|-|and)\s*(19\d{2}|20\d{2})\b', q)
     for m in range_matches:
         start_y = int(m.group(1))
@@ -63,22 +51,14 @@ def _extract_all_past_years(query: str):
                 seen.add(y)
                 years_to_process.append(y)
 
-    # Then detect individual years, ensuring we don't duplicate
-    # Also catch 2-digit shorthand years (e.g. 23, 24, 25)
     single_matches = re.finditer(r'\b(19\d{2}|20\d{2}|2[0-5])\b', q)
     for m in single_matches:
         val = m.group(1)
-        if len(val) == 2:
-            y = 2000 + int(val)
-        else:
-            y = int(val)
-            
+        y = 2000 + int(val) if len(val) == 2 else int(val)
         if y < current_year and y not in seen:
             seen.add(y)
             years_to_process.append(y)
-            
-    # Cap at max 6 years to avoid blowing up the API / LLM context
-    # Sort them descending, take top 6, then sort ascending for chronological order
+
     years_to_process = sorted(years_to_process, reverse=True)[:6]
     years_to_process.sort()
 
@@ -88,7 +68,6 @@ def _extract_all_past_years(query: str):
             past_dates.append(datetime(year, now.month, now.day))
         except ValueError:
             past_dates.append(datetime(year, now.month, 28))
-            
     return past_dates
 
 
@@ -98,13 +77,12 @@ def execute_plan(plan):
     Routes to the correct external APIs or internal ML modules.
     """
     intent = plan.get("intent", "weather")
+    all_intents = plan.get("all_intents", [intent])
     target_date = _ensure_datetime(plan.get("date"))
     ctx = plan.get("context", {})
     query = plan.get("query", "")
 
-    # Fallback: if no date was parsed but a past year exists in the query,
-    # infer the date so the Archive API gets triggered correctly.
-    # Skip this for comparisons — handled separately below.
+    # Fallback: infer past date from query year
     if target_date is None and intent in ["weather_history", "weather"]:
         inferred = _infer_past_date_from_query(query)
         if inferred:
@@ -112,12 +90,11 @@ def execute_plan(plan):
             intent = "weather_history"
             plan["intent"] = intent
 
-    # This dictionary will hold the raw execution results
     execution_result = {
         "weather": None,
         "forecast": None,
         "historical_weather": None,
-        "historical_comparison": None,   # stores list of historical datasets for comparison
+        "historical_comparison": None,
         "cyclone": None,
         "earthquake": None,
         "tsunami": None,
@@ -130,29 +107,30 @@ def execute_plan(plan):
 
         now = datetime.utcnow().date()
 
-        # COMPARISON ROUTE
-        # When intent is weather_comparison, fetch BOTH current weather AND
-        # historical data for every past year mentioned in the query.
-        if intent == "weather_comparison" or ctx.get("wants_comparison"):
-            # Always fetch current weather for the "present" side of the comparison
-            execution_result["weather"] = get_weather()
+        # ── DISASTER ROUTE ────────────────────────────────────────────────────
+        # Full report: always fetch weather + forecast + cyclones + earthquakes
+        if "disaster" in all_intents:
+            execution_result["weather"]    = get_weather()
+            execution_result["forecast"]   = get_forecast()
+            execution_result["cyclone"]    = get_cyclones()
+            execution_result["earthquake"] = get_earthquakes()
+            execution_result["tsunami"]    = get_tsunamis()
+            # Don't return early — other intents below may add more data
 
-            # Find all past years mentioned (e.g. 2025, 2024)
+        # ── COMPARISON ROUTE ──────────────────────────────────────────────────
+        if intent == "weather_comparison" or ctx.get("wants_comparison"):
+            execution_result["weather"] = get_weather()
             past_dates = _extract_all_past_years(query)
 
-            # FIX: If no explicit years found but target_date is in the past, use it!
-            # This handles relative phrases like "last year", "a year ago", etc.
             if not past_dates and target_date:
-                now_date = datetime.utcnow().date()
                 target_dt_only = target_date.date() if isinstance(target_date, datetime) else target_date
-                if target_dt_only < now_date:
+                if target_dt_only < now:
                     past_dates = [target_date]
 
             if past_dates:
                 comparison_results = []
                 for past_dt in past_dates:
                     past_date_only = past_dt.date()
-                    # Only fetch if it's past the archive lag window (~5 days)
                     archive_limit = datetime.utcnow().date() - timedelta(days=5)
                     if past_date_only <= archive_limit:
                         hist = fetch_historical_weather(past_dt, days_range=1)
@@ -163,14 +141,11 @@ def execute_plan(plan):
 
                 if comparison_results:
                     execution_result["historical_comparison"] = comparison_results
-                    # Also set historical_weather to the first result for
-                    # backward-compatibility with the Groq synthesis prompt
                     execution_result["historical_weather"] = comparison_results[0]
 
-            # Also grab forecast for a fuller picture
             execution_result["forecast"] = get_forecast()
 
-        # STANDARD WEATHER / HISTORY / PREDICTION ROUTE
+        # ── STANDARD WEATHER / HISTORY / PREDICTION ROUTE ────────────────────
         elif intent in ["weather_history", "weather", "prediction"]:
             if target_date:
                 target_date_only = target_date.date() if isinstance(target_date, datetime) else target_date
@@ -179,17 +154,15 @@ def execute_plan(plan):
                 elif target_date_only > now and (target_date_only - now).days <= 7:
                     execution_result["forecast"] = get_forecast()
 
-            # Current weather: fetch when no specific past date, or today, or general weather
             target_date_only = target_date.date() if target_date and isinstance(target_date, datetime) else target_date
             if not target_date or target_date_only == now:
                 execution_result["weather"] = get_weather()
 
-            # General overview: also fetch forecast when no date given
             if not target_date and intent in ["weather", "prediction"]:
                 execution_result["forecast"] = get_forecast()
 
-        # CYCLONE ROUTE
-        if "cyclone" in plan.get("all_intents", []):
+        # ── CYCLONE ROUTE ─────────────────────────────────────────────────────
+        if "cyclone" in all_intents and execution_result["cyclone"] is None:
             cy_name = ctx.get("cyclone_name")
             cy_year = ctx.get("year")
             c_data = get_cyclones(name=cy_name, year=cy_year)
@@ -198,12 +171,12 @@ def execute_plan(plan):
                 c_data["cyclones"] = cyc_list
             execution_result["cyclone"] = c_data
 
-        # EARTHQUAKE ROUTE
-        if "earthquake" in plan.get("all_intents", []):
+        # ── EARTHQUAKE ROUTE ──────────────────────────────────────────────────
+        if "earthquake" in all_intents and execution_result["earthquake"] is None:
             execution_result["earthquake"] = get_earthquakes()
 
-        # TSUNAMI ROUTE
-        if "tsunami" in plan.get("all_intents", []):
+        # ── TSUNAMI ROUTE ─────────────────────────────────────────────────────
+        if "tsunami" in all_intents and execution_result["tsunami"] is None:
             execution_result["tsunami"] = get_tsunamis()
 
     except ImportError as e:

@@ -92,9 +92,16 @@ def classify_query(query: str):
         intents.append("prediction")
 
     disaster_kw = ["disaster", "catastrophe", "calamity", "danger", "risk",
-                   "overview", "summary", "all"]
+                   "overview", "summary", "all", "report", "threat", "alert"]
     if any(re.search(rf"\b{k}\b", q) for k in disaster_kw):
         intents.append("disaster")
+        # Disaster report always includes weather, cyclone, earthquake
+        if "weather" not in intents and "weather_history" not in intents:
+            intents.append("weather")
+        if "cyclone" not in intents:
+            intents.append("cyclone")
+        if "earthquake" not in intents:
+            intents.append("earthquake")
 
     if "compare" in q or "difference" in q or re.search(r"\bvs\b", q) or "versus" in q:
         intents.append("weather_comparison")
