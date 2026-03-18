@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'https://climai-w9t7.onrender.com';
+const API_BASE = 'https://ipurushottam-climai.hf.space';
 
 // Removed tunnel bypass headers for stable production cloud deployment.
 
