@@ -4,16 +4,19 @@ FROM python:3.10-slim
 # Set the working directory
 WORKDIR /app
 
-# Install system dependencies (needed for some ML libraries)
+# Install system dependencies (needed for AI/ML libraries)
+# libgomp1 is required for XGBoost and LightGBM
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
-    software-properties-common \
+    cmake \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install them
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the backend code
 COPY . .

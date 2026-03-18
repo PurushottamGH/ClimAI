@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*$py.class
+climai.log
+*.json
+*.txt
+!requirements.txt
+.git/
+.venv/
+.vscode/
