@@ -1,46 +1,47 @@
 .wiki-card-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 100%;
     height: 100%;
     pointer-events: none;
     z-index: 2000;
     display: flex;
-    justify-content: flex-end;
-    align-items: flex-start;
-    padding: 100px 40px;
+    justify-content: center;
+    align-items: center;
 }
 
 .wiki-card {
-    width: 480px;
+    width: 320px;
     background: #000000;
-    border-radius: 36px;
-    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.8);
+    border-radius: 20px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9);
     pointer-events: auto;
     overflow: hidden;
     position: relative;
-    padding: 48px 40px;
-    animation: wiki-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 24px;
+    animation: wiki-scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid rgba(255, 255, 255, 0.08); /* subtle border */
 }
 
-@keyframes wiki-slide-in {
+@keyframes wiki-scale-in {
     from {
         opacity: 0;
-        transform: translateX(40px) scale(0.98);
+        transform: scale(0.95) translateY(10px);
     }
     to {
         opacity: 1;
-        transform: translateX(0) scale(1);
+        transform: scale(1) translateY(0);
     }
 }
 
 .wiki-close {
     position: absolute;
-    top: 24px;
-    right: 24px;
-    width: 32px;
-    height: 32px;
+    top: 16px;
+    right: 16px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -56,7 +57,7 @@
 
 .wiki-close:hover {
     opacity: 1;
-    transform: rotate(90deg);
+    transform: rotate(90deg) scale(1.1);
 }
 
 .wiki-content {
@@ -70,31 +71,33 @@
 }
 
 .wiki-title {
-    font-size: 42px;
+    font-size: 24px;
     font-weight: 500;
     color: #ffffff;
     margin: 0;
-    margin-bottom: 8px;
-    line-height: 1.1;
+    margin-bottom: 6px;
+    line-height: 1.15;
     font-family: inherit;
-    letter-spacing: -0.5px;
+    padding-right: 24px;
+    letter-spacing: -0.3px;
 }
 
 .wiki-date {
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
     color: #ffffff;
     letter-spacing: 0.5px;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
     font-weight: 600;
+    opacity: 0.9;
 }
 
 .wiki-extract {
-    font-size: 16px;
+    font-size: 13px;
     line-height: 1.5;
-    color: #ffffff;
+    color: rgba(255, 255, 255, 0.9);
     margin: 0;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
     font-weight: 400;
 }
 
@@ -107,15 +110,15 @@
 }
 
 .wiki-footer-text {
-    font-size: 11px;
-    color: #ffffff;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.7);
     font-weight: 500;
 }
 
 .wiki-link {
     color: #3b82f6;
     text-decoration: none;
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 600;
     transition: all 0.2s ease;
 }
@@ -127,11 +130,11 @@
 
 .wiki-image-wrap {
     width: 100%;
-    height: 280px;
+    height: 160px;
     position: relative;
     overflow: hidden;
-    background: #d4d4d4;
-    border-radius: 28px;
+    background: #262626;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -144,8 +147,8 @@
 }
 
 .wiki-image-placeholder span {
-    color: #000000;
-    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.5px;
 }
@@ -157,8 +160,8 @@
     flex-direction: column;
     align-items: center;
     gap: 16px;
-    color: rgba(255, 255, 255, 0.4);
-    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
 }
 
 .wiki-spinner {
@@ -175,36 +178,38 @@
 }
 
 .wiki-error {
-    padding: 60px 0;
+    padding: 40px 0;
     text-align: center;
 }
 
 .wiki-error-icon {
-    width: 48px;
-    height: 48px;
-    background: rgba(239, 44, 44, 0.1);
+    width: 40px;
+    height: 40px;
+    background: rgba(239, 44, 44, 0.15);
     border-radius: 50%;
     color: #ef4444;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 800;
     margin: 0 auto 16px;
 }
 
 .wiki-error p {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
     margin-bottom: 24px;
+    line-height: 1.5;
 }
 
 .wiki-retry-btn {
     background: rgba(255, 255, 255, 0.1);
     border: none;
     color: #fff;
-    padding: 8px 16px;
-    border-radius: 4px;
+    padding: 8px 24px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 600;
 }

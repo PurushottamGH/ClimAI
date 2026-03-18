@@ -13,46 +13,49 @@ export default function WikiCard({ event, onClose }) {
             setLoading(true);
             setError(null);
             
-            // Generate search query based on event type
-            let query = '';
+            // We will calculate date upfront specifically for the backend call
+            let eventDate = '';
+            let d;
+            if (event.time) {
+                d = new Date(event.time);
+            } else if (event.year) {
+                const monthIndex = event.month ? event.month - 1 : 0;
+                const day = event.day || 1;
+                d = new Date(event.year, monthIndex, day);
+            }
+            if (d && !isNaN(d.getTime())) {
+                const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+                const date = d.getDate();
+                const day = d.toLocaleString('en-US', { weekday: 'long' }).toUpperCase();
+                const year = d.getFullYear();
+                eventDate = `${month} ${date} | ${day} ${year}`;
+            }
+
+            let queryParams = new URLSearchParams();
+            queryParams.append('type', event.type);
+            queryParams.append('date', eventDate);
+            
             if (event.type === 'earthquake') {
-                // Earthquakes often don't have specific pages unless very large
-                // We'll search for the location + earthquake + year
-                const date = new Date(event.time);
-                const year = date.getFullYear();
-                query = `${event.place} earthquake ${year}`;
+                queryParams.append('name', event.place);
+                queryParams.append('magnitude', event.magnitude || '');
             } else if (event.type === 'cyclone') {
-                query = `Cyclone ${event.name}`;
+                queryParams.append('name', event.name);
             } else if (event.type === 'tsunami') {
-                query = `${event.name} Tsunami`;
+                queryParams.append('name', event.name);
             }
 
             try {
-                // 1. Search for best title
-                const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`;
-                const searchRes = await fetch(searchUrl);
-                const searchData = await searchRes.json();
+                const searchUrl = `/api/event-context?${queryParams.toString()}`;
+                const res = await fetch(searchUrl);
+                const data = await res.json();
                 
-                const title = searchData.query?.search[0]?.title;
-                
-                if (!title) {
-                    setError('No detailed records found for this specific event.');
-                    setLoading(false);
-                    return;
-                }
-
-                // 2. Fetch summary and image
-                const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-                const summaryRes = await fetch(summaryUrl);
-                const summaryData = await summaryRes.json();
-
-                if (summaryData.type === 'standard' || summaryData.type === 'disambiguation') {
-                    setData(summaryData);
+                if (data.error) {
+                    setError('Intelligence failure: ' + data.error);
                 } else {
-                    setError('Relevant page found, but summary is unavailable.');
+                    setData(data);
                 }
             } catch (err) {
-                console.error('Wiki fetch error:', err);
+                console.error('API fetch error:', err);
                 setError('Failed to fetch event context.');
             } finally {
                 setLoading(false);

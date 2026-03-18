@@ -2027,6 +2027,54 @@ def ask_climai(q: str = "weather today"):
     }
 
 
+# ════════════════════════════════
+# /event-context — Groq Intelligent Summary for Popups
+# ════════════════════════════════
+@app.get("/event-context")
+def get_event_context(type: str, name: str, magnitude: str = "", date: str = ""):
+    import urllib.parse
+    from groq_llm import client
+    
+    prompt = f"Provide a brief, 3-sentence overview of the {name} {type} that occurred around {date}. If it's a generic unnotable event (like a recent magnitude {magnitude} earthquake), explain what a magnitude {magnitude} earthquake typically feels like and its typical impact. Mention casualties or reason if historically known. Keep it concise, factual, and strictly under 4 sentences."
+    
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "You are a concise disaster intelligence AI. Do not use conversational filler, just provide the facts."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=150,
+            temperature=0.3,
+        )
+        extract = response.choices[0].message.content.strip()
+        
+        img_query = f"{name} {type}" if type != 'earthquake' else f"{name} skyline"
+        search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(img_query)}&utf8=&format=json&origin=*"
+        
+        img_source = None
+        img_url = None
+        try:
+            s_res = requests.get(search_url, timeout=5).json()
+            if s_res.get('query', {}).get('search'):
+                title = s_res['query']['search'][0]['title']
+                sum_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(title)}"
+                sum_res = requests.get(sum_url, timeout=5).json()
+                if 'thumbnail' in sum_res:
+                    img_source = sum_res['thumbnail']['source']
+                img_url = sum_res.get('content_urls', {}).get('desktop', {}).get('page')
+        except Exception:
+            pass
+            
+        return {
+            "title": name.title() if name else f"Magnitude {magnitude} Earthquake",
+            "extract": extract,
+            "thumbnail": {"source": img_source} if img_source else None,
+            "content_urls": {"desktop": {"page": img_url}} if img_url else None
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
 
 if __name__ == "__main__":
     import uvicorn  # type: ignore[import]
