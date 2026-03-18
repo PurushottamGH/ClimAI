@@ -2073,7 +2073,8 @@ def get_event_context(type: str, name: str, magnitude: str = "", date: str = "")
             "content_urls": {"desktop": {"page": img_url}} if img_url else None
         }
     except Exception as e:
-        return {"error": str(e)}
+        import traceback
+        return {"error": traceback.format_exc()}
 
 
 if __name__ == "__main__":
