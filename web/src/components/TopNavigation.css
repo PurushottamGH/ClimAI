@@ -5,6 +5,7 @@
     transform: translateX(-50%);
     z-index: 1000;
     display: flex;
+    align-items: center;
     background: rgba(16, 18, 24, 0.4); /* Subtle glass background */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -12,6 +13,20 @@
     border-radius: 50px;
     padding: 6px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.top-nav-logo {
+    height: 18px;
+    margin: 0 16px 0 12px;
+    cursor: pointer;
+    filter: invert(1);
+    mix-blend-mode: screen;
+    opacity: 0.85;
+    transition: opacity 0.2s ease;
+}
+
+.top-nav-logo:hover {
+    opacity: 1;
 }
 
 .top-nav-inner {

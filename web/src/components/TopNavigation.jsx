@@ -52,6 +52,12 @@ export default function TopNavigation({ activeView, onChangeView }) {
 
     return (
         <div className="top-nav-wrapper">
+            <img 
+                src="/logo.png" 
+                alt="ClimAI"
+                className="top-nav-logo"
+                onClick={() => onChangeView('overview')}
+            />
             <div className="top-nav-inner" ref={containerRef} onMouseLeave={() => setHoveredId(null)}>
                 
                 {/* ── Slide Pill ── */}
