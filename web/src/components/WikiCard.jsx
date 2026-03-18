@@ -96,15 +96,17 @@ function buildEventContext(event) {
         const wave = event.wave_height_m;
         const mag = event.magnitude;
         const fatalities = event.fatalities;
-        const year = event.year;
-        const location = event.location || 'Indian Ocean';
+        const year = event.year || (event.date ? event.date.split('-')[0] : 'Unknown');
+        const location = event.origin || event.location || 'Indian Ocean';
+
+        const cleanName = name.toLowerCase().includes('tsunami') ? name : `${name} Tsunami`;
 
         return {
-            title: `${name} Tsunami (${year})`,
+            title: `${cleanName} (${year})`,
             date: event.date || `${year}`,
             severity: wave >= 10 ? 'Catastrophic' : wave >= 5 ? 'Severe' : 'Moderate',
             type: 'tsunami',
-            imageQuery: `${name} tsunami ${year}`,
+            imageQuery: `${cleanName} ${year}`,
             facts: [
                 { label: 'Event', value: name },
                 { label: 'Location', value: location },
@@ -163,15 +165,41 @@ export default function WikiCard({ event, onClose }) {
         const ctx = buildEventContext(event);
         setData(ctx);
 
-        // Fetch real Wikipedia image
-        if (ctx?.imageQuery) {
-            fetchWikiImage(ctx.imageQuery).then(info => {
-                setImageInfo(info);
-                setImgLoading(false);
-            });
-        } else {
-            setImgLoading(false);
-        }
+        // Fetch real Wikipedia image and Groq LLM Intelligence
+        const fetchIntelligence = async () => {
+            try {
+                // 1. Image
+                if (ctx?.imageQuery) {
+                    fetchWikiImage(ctx.imageQuery).then(info => {
+                        setImageInfo(info);
+                        setImgLoading(false);
+                    });
+                } else {
+                    setImgLoading(false);
+                }
+
+                // 2. Groq LLM context
+                const params = new URLSearchParams({ type: event.type });
+                if (ctx.title) params.append('name', ctx.title);
+                if (event.magnitude) params.append('magnitude', event.magnitude);
+                if (event.date) params.append('date', event.date);
+                if (event.year) params.append('date', event.year);
+                
+                const llmData = await api.getEventContext(params.toString());
+                if (llmData && !llmData.error) {
+                    setData(prev => ({
+                        ...prev,
+                        what_happened: llmData.summary || prev.what_happened,
+                        why_it_happened: llmData.reason || prev.why_it_happened,
+                        impact: llmData.impact || prev.impact,
+                    }));
+                }
+            } catch (err) {
+                console.error('Intelligence fetch error', err);
+            }
+        };
+        
+        fetchIntelligence();
     }, [event]);
 
     if (!event) return null;
