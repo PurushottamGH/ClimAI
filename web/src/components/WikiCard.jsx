@@ -1,25 +1,6 @@
 import { useState, useEffect } from 'react';
 import './WikiCard.css';
 
-// ── Unsplash source images for each event type (free, no API key needed) ──
-const EVENT_IMAGES = {
-    earthquake: [
-        'https://images.unsplash.com/photo-1588422964040-4ca7f2e6efbb?w=600&q=80',
-        'https://images.unsplash.com/photo-1547683905-f686c993aae5?w=600&q=80',
-        'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=600&q=80',
-    ],
-    cyclone: [
-        'https://images.unsplash.com/photo-1527482937786-6608f6e14c15?w=600&q=80',
-        'https://images.unsplash.com/photo-1504270997636-07ddfbd48945?w=600&q=80',
-        'https://images.unsplash.com/photo-1603789023070-49bbd9277f2e?w=600&q=80',
-    ],
-    tsunami: [
-        'https://images.unsplash.com/photo-1509266272358-7701da638078?w=600&q=80',
-        'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=600&q=80',
-        'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=600&q=80',
-    ],
-};
-
 // ── Generate rich event context from raw event data ──
 function buildEventContext(event) {
     if (!event) return null;
@@ -61,11 +42,15 @@ function buildEventContext(event) {
             cause = 'Stress accumulated along a fault line was suddenly released, causing the ground to shake. The hypocenter (focus) was located several kilometers below the surface.';
         }
 
+        // Extract city/region name for image search
+        const placeForImage = place.split(',').pop()?.trim() || place.split(' of ').pop()?.trim() || place;
+
         return {
             title: `M${mag.toFixed(1)} Earthquake — ${place}`,
             date: dateStr,
             severity,
             type: 'earthquake',
+            imageQuery: `${placeForImage} earthquake damage`,
             facts: [
                 { label: 'Magnitude', value: `M${mag.toFixed(1)} (Richter Scale)` },
                 { label: 'Location', value: place },
@@ -75,7 +60,6 @@ function buildEventContext(event) {
             what_happened: `A magnitude ${mag.toFixed(1)} earthquake struck ${place}. ${impact}`,
             why_it_happened: cause,
             impact: `${impact} ${deaths}`,
-            image: EVENT_IMAGES.earthquake[Math.floor(Math.random() * EVENT_IMAGES.earthquake.length)],
         };
     }
 
@@ -92,6 +76,7 @@ function buildEventContext(event) {
             date: event.dates || `${year}`,
             severity: cat,
             type: 'cyclone',
+            imageQuery: `Cyclone ${name} ${year}`,
             facts: [
                 { label: 'Name', value: name },
                 { label: 'Category', value: cat },
@@ -102,8 +87,7 @@ function buildEventContext(event) {
             ],
             what_happened: `Cyclone ${name} was a ${cat} that formed in the Bay of Bengal and impacted the Tamil Nadu and Chennai coastline. Maximum sustained winds reached ${wind || '—'} km/h with heavy rainfall of ${rain || '—'} mm recorded.`,
             why_it_happened: 'Tropical cyclones form over warm ocean waters (above 26°C) in the Bay of Bengal during pre-monsoon and post-monsoon seasons. Warm sea surface temperatures provide the energy that fuels the storm system as it intensifies.',
-            impact: `The cyclone caused significant disruption to Chennai and surrounding districts. ${damage ? `Estimated damage: ₹${damage} crores.` : ''} Heavy rainfall led to flooding in low-lying areas of the city, which sits at only 6m above sea level.`,
-            image: EVENT_IMAGES.cyclone[Math.floor(Math.random() * EVENT_IMAGES.cyclone.length)],
+            impact: `The cyclone caused significant disruption to Chennai and surrounding districts. ${damage ? `Estimated damage: ₹${damage} crores.` : ''} Heavy rainfall led to flooding in low-lying areas of the city.`,
         };
     }
 
@@ -120,6 +104,7 @@ function buildEventContext(event) {
             date: event.date || `${year}`,
             severity: wave >= 10 ? 'Catastrophic' : wave >= 5 ? 'Severe' : 'Moderate',
             type: 'tsunami',
+            imageQuery: `${name} tsunami ${year}`,
             facts: [
                 { label: 'Event', value: name },
                 { label: 'Location', value: location },
@@ -130,23 +115,63 @@ function buildEventContext(event) {
             ],
             what_happened: `The ${name} tsunami was triggered by a magnitude ${mag || '—'} undersea earthquake in the ${location} region. Wave heights reached up to ${wave || '—'} meters, causing widespread coastal destruction.`,
             why_it_happened: 'Tsunamis are caused by sudden large-scale disturbances of the ocean floor, most commonly undersea earthquakes along subduction zones. The displaced water forms long-wavelength waves that travel at speeds up to 800 km/h across ocean basins.',
-            impact: `${fatalities ? `This event claimed ${fatalities.toLocaleString()} lives, making it one of the most devastating tsunami events recorded.` : 'Significant coastal damage and displacement of communities.'} Chennai and Tamil Nadu coastlines are particularly vulnerable due to their low elevation and proximity to seismically active zones in the Indian Ocean.`,
-            image: EVENT_IMAGES.tsunami[Math.floor(Math.random() * EVENT_IMAGES.tsunami.length)],
+            impact: `${fatalities ? `This event claimed ${fatalities.toLocaleString()} lives, making it one of the most devastating tsunami events recorded.` : 'Significant coastal damage and displacement of communities.'} Chennai and Tamil Nadu coastlines are particularly vulnerable due to their low elevation.`,
         };
     }
 
     return null;
 }
 
+// ── Fetch real image from Wikipedia for the event ──
+async function fetchWikiImage(query) {
+    try {
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`;
+        const searchRes = await fetch(searchUrl);
+        const searchData = await searchRes.json();
+        const title = searchData?.query?.search?.[0]?.title;
+        if (!title) return null;
+
+        const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+        const summaryRes = await fetch(summaryUrl);
+        const summaryData = await summaryRes.json();
+
+        if (summaryData?.thumbnail?.source) {
+            // Get higher resolution by replacing thumbnail size
+            const hiRes = summaryData.originalimage?.source || summaryData.thumbnail.source.replace(/\/\d+px-/, '/600px-');
+            return {
+                src: hiRes,
+                caption: summaryData.title,
+                url: summaryData.content_urls?.desktop?.page,
+            };
+        }
+        return null;
+    } catch {
+        return null;
+    }
+}
+
 export default function WikiCard({ event, onClose }) {
     const [data, setData] = useState(null);
+    const [imageInfo, setImageInfo] = useState(null);
+    const [imgLoading, setImgLoading] = useState(false);
     const [imgError, setImgError] = useState(false);
 
     useEffect(() => {
-        if (!event) { setData(null); return; }
+        if (!event) { setData(null); setImageInfo(null); return; }
         setImgError(false);
+        setImgLoading(true);
         const ctx = buildEventContext(event);
         setData(ctx);
+
+        // Fetch real Wikipedia image
+        if (ctx?.imageQuery) {
+            fetchWikiImage(ctx.imageQuery).then(info => {
+                setImageInfo(info);
+                setImgLoading(false);
+            });
+        } else {
+            setImgLoading(false);
+        }
     }, [event]);
 
     if (!event) return null;
@@ -183,57 +208,70 @@ export default function WikiCard({ event, onClose }) {
                         <h2 className="wiki-title">{data.title}</h2>
                         {data.date && <div className="wiki-date">{data.date}</div>}
 
-                        {/* ── FACTS GRID ── */}
-                        <div className="wiki-facts">
-                            {data.facts.map((f, i) => (
-                                <div key={i} className="wiki-fact">
-                                    <div className="wiki-fact-label">{f.label}</div>
-                                    <div className="wiki-fact-value" style={{ color }}>{f.value}</div>
+                        {/* ── TWO COLUMN: Facts + Sections left, Image right ── */}
+                        <div className="wiki-body-row">
+                            <div className="wiki-body-left">
+                                {/* ── FACTS GRID ── */}
+                                <div className="wiki-facts">
+                                    {data.facts.map((f, i) => (
+                                        <div key={i} className="wiki-fact">
+                                            <div className="wiki-fact-label">{f.label}</div>
+                                            <div className="wiki-fact-value" style={{ color }}>{f.value}</div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
 
-                        {/* ── WHAT HAPPENED ── */}
-                        <div className="wiki-section">
-                            <div className="wiki-section-title">WHAT HAPPENED</div>
-                            <p className="wiki-section-body">{data.what_happened}</p>
-                        </div>
-
-                        {/* ── WHY IT HAPPENED ── */}
-                        <div className="wiki-section">
-                            <div className="wiki-section-title">WHY IT HAPPENED</div>
-                            <p className="wiki-section-body">{data.why_it_happened}</p>
-                        </div>
-
-                        {/* ── IMPACT ── */}
-                        <div className="wiki-section">
-                            <div className="wiki-section-title" style={{ color: '#f87171' }}>IMPACT & DAMAGE</div>
-                            <p className="wiki-section-body">{data.impact}</p>
-                        </div>
-
-                        {/* ── REAL IMAGE ── */}
-                        <div className="wiki-image-wrap">
-                            {!imgError ? (
-                                <img
-                                    src={data.image}
-                                    alt={data.title}
-                                    className="wiki-image"
-                                    onError={() => setImgError(true)}
-                                />
-                            ) : (
-                                <div className="wiki-image-fallback" style={{ borderColor: `${color}33` }}>
-                                    <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>Image unavailable</span>
+                                {/* ── WHAT HAPPENED ── */}
+                                <div className="wiki-section">
+                                    <div className="wiki-section-title">WHAT HAPPENED</div>
+                                    <p className="wiki-section-body">{data.what_happened}</p>
                                 </div>
-                            )}
-                            <div className="wiki-image-caption">
-                                Reference image · {data.title}
+
+                                {/* ── WHY IT HAPPENED ── */}
+                                <div className="wiki-section">
+                                    <div className="wiki-section-title">WHY IT HAPPENED</div>
+                                    <p className="wiki-section-body">{data.why_it_happened}</p>
+                                </div>
+                            </div>
+
+                            {/* ── RIGHT: Image ── */}
+                            <div className="wiki-body-right">
+                                <div className="wiki-image-wrap">
+                                    {imgLoading ? (
+                                        <div className="wiki-image-loading">
+                                            <div className="wiki-spinner" style={{ borderTopColor: color }} />
+                                        </div>
+                                    ) : imageInfo && !imgError ? (
+                                        <>
+                                            <img
+                                                src={imageInfo.src}
+                                                alt={data.title}
+                                                className="wiki-image"
+                                                onError={() => setImgError(true)}
+                                            />
+                                            <div className="wiki-image-caption">
+                                                {imageInfo.caption} · Wikipedia
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="wiki-image-fallback">
+                                            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>Image unavailable</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* ── SEVERITY INDICATOR ── */}
+                                <div className="wiki-severity" style={{ borderColor: `${color}44` }}>
+                                    <span className="wiki-severity-label">SEVERITY</span>
+                                    <span className="wiki-severity-value" style={{ color }}>{data.severity}</span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* ── SEVERITY INDICATOR ── */}
-                        <div className="wiki-severity" style={{ borderColor: `${color}44` }}>
-                            <span className="wiki-severity-label">SEVERITY</span>
-                            <span className="wiki-severity-value" style={{ color }}>{data.severity}</span>
+                        {/* ── IMPACT (full width below) ── */}
+                        <div className="wiki-section">
+                            <div className="wiki-section-title" style={{ color: '#f87171' }}>IMPACT & DAMAGE</div>
+                            <p className="wiki-section-body">{data.impact}</p>
                         </div>
                     </div>
                 )}
