@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { ChevronRight, Reload, CheckBox, Close, Pulse, Database, Cpu, Globe } from 'pixelarticons/react';
+import { ChevronRight, Reload, Checkbox as CheckBox, Cancel as Close, AudioWaveform as Pulse, Database, Cpu, Globe } from 'pixelarticons/react';
 
 const TT = { backgroundColor: '#0d0d14', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0', color: '#e5e5e5', fontSize: '12px', padding: '8px 12px', fontFamily: "'DM Mono', monospace" };
 
 const MODELS = [
     { id: 'random_forest', label: 'Random Forest', color: '#3b82f6', Icon: Database },
-    { id: 'xgboost',       label: 'XGBoost',       color: '#f97316', Icon: Cpu },
-    { id: 'lstm',          label: 'LSTM',           color: '#8b5cf6', Icon: Pulse },
-    { id: 'lightgbm',      label: 'LightGBM',       color: '#22c55e', Icon: Globe },
+    { id: 'xgboost', label: 'XGBoost', color: '#f97316', Icon: Cpu },
+    { id: 'lstm', label: 'LSTM', color: '#8b5cf6', Icon: Pulse },
+    { id: 'lightgbm', label: 'LightGBM', color: '#22c55e', Icon: Globe },
 ];
 
 export default function Lab() {
@@ -50,7 +50,7 @@ export default function Lab() {
             setHistLoading(true);
             api.getHistorical(2)
                 .then(d => setHistorical(d))
-                .catch(() => {})
+                .catch(() => { })
                 .finally(() => setHistLoading(false));
         }
     }, [tab]);
@@ -70,8 +70,8 @@ export default function Lab() {
                 {/* Tabs */}
                 <div className="lab-tabs">
                     {[
-                        { id: 'models',     label: 'Model Comparison' },
-                        { id: 'ensemble',   label: 'Ensemble Report' },
+                        { id: 'models', label: 'Model Comparison' },
+                        { id: 'ensemble', label: 'Ensemble Report' },
                         { id: 'historical', label: 'Historical Explorer' },
                     ].map(t => (
                         <button key={t.id} className={`lab-tab ${tab === t.id ? 'lab-tab-active' : ''}`} onClick={() => setTab(t.id)}>
@@ -109,7 +109,7 @@ export default function Lab() {
                                                     <LineChart data={preds}>
                                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
                                                         <XAxis dataKey="day" stroke="rgba(255,255,255,0.2)" fontSize={9} tickLine={false} />
-                                                        <YAxis stroke="rgba(255,255,255,0.2)" fontSize={9} tickLine={false} unit="°" domain={['auto','auto']} />
+                                                        <YAxis stroke="rgba(255,255,255,0.2)" fontSize={9} tickLine={false} unit="°" domain={['auto', 'auto']} />
                                                         <Tooltip contentStyle={TT} />
                                                         <Line type="monotone" dataKey="predicted_max" name="Max" stroke={m.color} strokeWidth={2} dot={false} />
                                                         <Line type="monotone" dataKey="predicted_min" name="Min" stroke={m.color} strokeWidth={1} strokeDasharray="4 2" dot={false} opacity={0.5} />
@@ -131,7 +131,7 @@ export default function Lab() {
                                     {MODELS.filter(m => modelResults[m.id]?.predictions?.length).map(m => {
                                         const preds = modelResults[m.id].predictions;
                                         const d1 = preds[0]?.predicted_max;
-                                        const d7 = preds[preds.length-1]?.predicted_max;
+                                        const d7 = preds[preds.length - 1]?.predicted_max;
                                         const diff = d7 && d1 ? (d7 - d1).toFixed(1) : null;
                                         return (
                                             <div key={m.id} className="lab-compare-item">
@@ -178,9 +178,9 @@ export default function Lab() {
                                         <BarChart data={preds}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                                             <XAxis dataKey="day" stroke="rgba(255,255,255,0.2)" fontSize={10} tickLine={false} />
-                                            <YAxis stroke="rgba(255,255,255,0.2)" fontSize={10} tickLine={false} unit="°" domain={['auto','auto']} />
+                                            <YAxis stroke="rgba(255,255,255,0.2)" fontSize={10} tickLine={false} unit="°" domain={['auto', 'auto']} />
                                             <Tooltip contentStyle={TT} />
-                                            <Bar dataKey="predicted_max" name="Ensemble Max °C" radius={[2,2,0,0]}>
+                                            <Bar dataKey="predicted_max" name="Ensemble Max °C" radius={[2, 2, 0, 0]}>
                                                 {preds.map((p, i) => <Cell key={i} fill={p.confidence === 'high' ? '#3b82f6' : p.confidence === 'medium' ? '#f97316' : '#f87171'} />)}
                                             </Bar>
                                         </BarChart>
@@ -213,7 +213,7 @@ export default function Lab() {
                                                 <LineChart data={monthly}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
                                                     <XAxis dataKey="month" stroke="rgba(255,255,255,0.2)" fontSize={9} tickLine={false} tickFormatter={v => v.slice(5)} />
-                                                    <YAxis stroke="rgba(255,255,255,0.2)" fontSize={9} tickLine={false} unit="°" domain={['auto','auto']} />
+                                                    <YAxis stroke="rgba(255,255,255,0.2)" fontSize={9} tickLine={false} unit="°" domain={['auto', 'auto']} />
                                                     <Tooltip contentStyle={TT} />
                                                     <Line type="monotone" dataKey="avg_temp_max" name="Max" stroke="#f97316" strokeWidth={2} dot={false} />
                                                     <Line type="monotone" dataKey="avg_temp_min" name="Min" stroke="#06b6d4" strokeWidth={2} dot={false} />
@@ -228,14 +228,14 @@ export default function Lab() {
                                                     <XAxis dataKey="month" stroke="rgba(255,255,255,0.2)" fontSize={9} tickLine={false} tickFormatter={v => v.slice(5)} />
                                                     <YAxis stroke="rgba(255,255,255,0.2)" fontSize={9} tickLine={false} unit="mm" />
                                                     <Tooltip contentStyle={TT} />
-                                                    <Bar dataKey="total_precip" name="Rainfall mm" fill="#3b82f6" radius={[2,2,0,0]} opacity={0.8} />
+                                                    <Bar dataKey="total_precip" name="Rainfall mm" fill="#3b82f6" radius={[2, 2, 0, 0]} opacity={0.8} />
                                                 </BarChart>
                                             </ResponsiveContainer>
                                         </div>
                                     </div>
                                     <table className="lab-hist-table">
                                         <thead>
-                                            <tr>{['Month','Avg Max °C','Avg Min °C','Rain mm','Wind km/h'].map(h => <th key={h} className="lab-th">{h}</th>)}</tr>
+                                            <tr>{['Month', 'Avg Max °C', 'Avg Min °C', 'Rain mm', 'Wind km/h'].map(h => <th key={h} className="lab-th">{h}</th>)}</tr>
                                         </thead>
                                         <tbody>
                                             {monthly.slice(-12).map((m, i) => (

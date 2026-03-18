@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { CloudRain, ZapOff, Globe, Heart, ArrowRight, User, Code, Database, Cpu, ChevronRight } from 'pixelarticons/react';
+import { Cloud as CloudRain, ZapOff, Globe, Heart, ArrowRight, User, Terminal as Code, Database, Cpu, ChevronRight } from 'pixelarticons/react';
 
 const PIPELINE = [
     { step: '01', label: 'PLANNER', desc: 'LLM-powered intent classification with typo tolerance and context extraction', color: '#3b82f6', Icon: Cpu },
