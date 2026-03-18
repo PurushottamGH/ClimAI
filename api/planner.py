@@ -2,7 +2,7 @@ from date_utils import parse_date
 import re
 import json
 import logging
-from groq_llm import client as groq_client # Reuse the existing Groq client
+from groq_llm import client as groq_client
 
 KNOWN_CYCLONES = ["michaung", "mandous", "nivar", "gaja", "vardah", "thane", "nisha",
                   "fani", "amphan", "hudhud", "phailin", "laila", "jal"]
@@ -13,23 +13,15 @@ KNOWN_LOCATIONS = ["chennai", "mumbai", "kolkata", "vizag", "visakhapatnam",
                    "nagapattinam", "mahabalipuram"]
 
 def _normalize_query(q: str) -> str:
-    """
-    Normalize common typos and misspellings that affect intent detection.
-    Handles fuzzy variants of keywords like 'previous', 'historical', etc.
-    """
     typo_map = {
-        # previous variants
         r"\bpervious\b": "previous",
         r"\bprevios\b": "previous",
         r"\bpreviuos\b": "previous",
         r"\bprevioues\b": "previous",
         r"\bprevius\b": "previous",
         r"\bprevioius\b": "previous",
-        # historical variants
-        r"\bhistorical\b": "historical",
         r"\bhistorcal\b": "historical",
         r"\bhistoricle\b": "historical",
-        # yesterday variants
         r"\byesterady\b": "yesterday",
         r"\byestarday\b": "yesterday",
     }
@@ -38,14 +30,19 @@ def _normalize_query(q: str) -> str:
     return q
 
 
+def _expand_disaster_intents(intents: list) -> list:
+    """If disaster intent detected, always include weather, cyclone, earthquake."""
+    if "disaster" in intents:
+        for extra in ["weather", "cyclone", "earthquake", "tsunami"]:
+            if extra not in intents:
+                intents.append(extra)
+    return intents
+
+
 def classify_query(query: str):
-    """
-    Classify query into granular intent categories.
-    """
     q = _normalize_query(query.lower().strip())
     intents = []
 
-    # Detect time orientation
     past_kw = ["last year", "previous", "history", "historical", "ago", "past",
                "same date", "same day", "this day", "yesterday", "back in",
                "was", "were", "happened", "occurred", "hit", "struck", "recent"]
@@ -56,7 +53,6 @@ def classify_query(query: str):
     is_past = any(re.search(rf"\b{k}\b", q) for k in past_kw)
     is_future = any(re.search(rf"\b{k}\b", q) for k in future_kw)
 
-    # Force historical mode if an explicit past year is mentioned (e.g. "2025", "2023")
     current_year = __import__("datetime").datetime.now().year
     past_year_match = re.search(r'\b(19\d{2}|20\d{2})\b', q)
     if past_year_match and int(past_year_match.group(1)) < current_year:
@@ -95,18 +91,10 @@ def classify_query(query: str):
                    "overview", "summary", "all", "report", "threat", "alert"]
     if any(re.search(rf"\b{k}\b", q) for k in disaster_kw):
         intents.append("disaster")
-        # Disaster report always includes weather, cyclone, earthquake
-        if "weather" not in intents and "weather_history" not in intents:
-            intents.append("weather")
-        if "cyclone" not in intents:
-            intents.append("cyclone")
-        if "earthquake" not in intents:
-            intents.append("earthquake")
 
     if "compare" in q or "difference" in q or re.search(r"\bvs\b", q) or "versus" in q:
         intents.append("weather_comparison")
 
-    # Detect year ranges (e.g., "2021 to 2026") and treat them as comparisons
     is_range = bool(re.search(r'\b(19\d{2}|20\d{2})\s*(?:to|-|and)\s*(19\d{2}|20\d{2})\b', q))
     if is_range and "weather_comparison" not in intents:
         intents.append("weather_comparison")
@@ -114,14 +102,10 @@ def classify_query(query: str):
     if not intents:
         intents.append("weather")
 
-    return list(set(intents))
+    return _expand_disaster_intents(list(set(intents)))
 
 
 def extract_query_context(query: str):
-    """
-    Extract structured context from a natural-language query.
-    Used as fallback if LLM extraction fails.
-    """
     q = _normalize_query(query.lower().strip())
     
     cyclone_name = None
@@ -143,7 +127,6 @@ def extract_query_context(query: str):
     wants_recent = any(k in q for k in ["recent", "latest", "last", "newest", "most recent"])
     wants_comparison = any(k in q for k in ["compare", "vs", "versus", "difference", "than"])
 
-    # Detect year ranges
     is_range = bool(re.search(r'\b(19\d{2}|20\d{2})\s*(?:to|-|and)\s*(19\d{2}|20\d{2})\b', q))
     if is_range:
         wants_comparison = True
@@ -156,13 +139,11 @@ def extract_query_context(query: str):
         "wants_comparison": wants_comparison
     }
 
+
 def extract_intent_with_llm(query: str) -> dict:
-    """
-    Uses LLM to extract intents and context, fixing typos automatically.
-    """
     system_prompt = """You are an intent classifier for a climate and disaster tracking app.
     Given a user query, you must extract their intent and basic context.
-    The query may contain severe severe typos or bad grammar. You must figure out what they mean.
+    The query may contain severe typos or bad grammar. You must figure out what they mean.
     
     Allowed intents: weather, weather_history, weather_comparison, prediction, cyclone, cyclone_history, cyclone_prediction, earthquake, tsunami, disaster.
     
@@ -170,15 +151,14 @@ def extract_intent_with_llm(query: str) -> dict:
     {
         "intents": ["list", "of", "intents"],
         "context": {
-            "cyclone_name": null, // string if mentioned
-            "year": null, // int if mentioned
-            "location": null, // string if mentioned
-            "wants_recent": false, // boolean
-            "wants_comparison": false // boolean
+            "cyclone_name": null,
+            "year": null,
+            "location": null,
+            "wants_recent": false,
+            "wants_comparison": false
         }
     }
     """
-    
     try:
         response = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -191,14 +171,13 @@ def extract_intent_with_llm(query: str) -> dict:
             max_tokens=200
         )
         result = json.loads(response.choices[0].message.content)
-        # Ensure it has the expected structure
         if "intents" not in result or "context" not in result:
-             raise ValueError("LLM returned malformed JSON structure")
+            raise ValueError("LLM returned malformed JSON structure")
         return result
     except Exception as e:
-        import traceback
-        logging.error(f"LLM extraction failed: {e}. Traceback: {traceback.format_exc()}")
+        logging.error(f"LLM extraction failed: {e}")
         return None
+
 
 def plan_query(query: str):
     """
@@ -207,30 +186,30 @@ def plan_query(query: str):
     """
     # 1. Try LLM Extraction First
     llm_result = extract_intent_with_llm(query)
-    
+
     if llm_result:
-    intents = llm_result.get("intents", [])
-    context = llm_result.get("context", {})
-    if not intents:
-        intents = classify_query(query)
-    # Always apply disaster expansion regardless of LLM result
-    if "disaster" in intents:
-        for extra in ["weather", "cyclone", "earthquake", "tsunami"]:
-            if extra not in intents:
-                intents.append(extra)
+        intents = llm_result.get("intents", [])
+        context = llm_result.get("context", {})
+        # Safety fallback if LLM returns empty intents
+        if not intents:
+            intents = classify_query(query)
+        else:
+            # Always apply disaster expansion even for LLM results
+            intents = _expand_disaster_intents(intents)
     else:
         # 2. Fallback to Regex
         logging.warning("Falling back to regex intent classification")
         intents = classify_query(query)
         context = extract_query_context(query)
-        
+
     date_val = parse_date(query)
-    
+
     # 3. Select the primary intent
-    # Prioritize comparison or historical/cyclone if detected
     primary_intent = "weather"
     if "weather_comparison" in intents:
         primary_intent = "weather_comparison"
+    elif "disaster" in intents:
+        primary_intent = "disaster"
     elif "cyclone" in intents or "cyclone_history" in intents:
         primary_intent = "cyclone_history"
     elif "weather_history" in intents:
