@@ -1846,6 +1846,13 @@ def ask_climai(q: str = "weather today"):
     # ── 1. PLAN ──
     plan = plan_query(query)
     intents = plan["all_intents"]
+
+    # Ensure disaster reports always include all data sources
+    if "disaster" in intents:
+        for extra in ["weather", "cyclone", "earthquake", "tsunami"]:
+            if extra not in intents:
+                intents.append(extra)
+        plan["all_intents"] = intents
     target_date = plan["date"]
     ctx = plan["context"]
     

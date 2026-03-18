@@ -209,11 +209,15 @@ def plan_query(query: str):
     llm_result = extract_intent_with_llm(query)
     
     if llm_result:
-        intents = llm_result.get("intents", [])
-        context = llm_result.get("context", {})
-        # Safety fallback if LLM returns empty intents despite succeeding
-        if not intents:
-             intents = classify_query(query)
+    intents = llm_result.get("intents", [])
+    context = llm_result.get("context", {})
+    if not intents:
+        intents = classify_query(query)
+    # Always apply disaster expansion regardless of LLM result
+    if "disaster" in intents:
+        for extra in ["weather", "cyclone", "earthquake", "tsunami"]:
+            if extra not in intents:
+                intents.append(extra)
     else:
         # 2. Fallback to Regex
         logging.warning("Falling back to regex intent classification")
