@@ -209,10 +209,13 @@ export default function WorldMap({
     onHover: info => setHoverInfo({ ...info, isCycloneEye: true }),
     onClick: info => {
       if (info.object) {
+        const sortedTrack = info.object.track[0].time ? [...info.object.track].sort((a, b) => new Date(a.time) - new Date(b.time)) : info.object.track;
+        const latest = sortedTrack[sortedTrack.length - 1];
         setSelectedEvent({
           type: 'cyclone',
           name: info.object.name,
-          category: info.object.category
+          category: info.object.category,
+          time: latest?.time
         });
       }
     },
@@ -242,7 +245,10 @@ export default function WorldMap({
         setSelectedEvent({
           type: 'tsunami',
           name: info.object.name,
-          location: info.object.location
+          location: info.object.location,
+          year: info.object.year,
+          month: info.object.month,
+          day: info.object.day
         });
       }
     },

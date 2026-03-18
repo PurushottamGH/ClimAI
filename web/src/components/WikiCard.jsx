@@ -64,11 +64,36 @@ export default function WikiCard({ event, onClose }) {
 
     if (!event) return null;
 
+    const getFormattedDate = () => {
+        if (!event) return '';
+        let d;
+        if (event.time) {
+            d = new Date(event.time);
+        } else if (event.year) {
+            const monthIndex = event.month ? event.month - 1 : 0;
+            const day = event.day || 1;
+            d = new Date(event.year, monthIndex, day);
+        } else {
+            return '';
+        }
+        
+        if (isNaN(d.getTime())) return '';
+        
+        const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+        const date = d.getDate();
+        const day = d.toLocaleString('en-US', { weekday: 'long' }).toUpperCase();
+        const year = d.getFullYear();
+        
+        return `${month} ${date} | ${day} ${year}`;
+    };
+
+    const dateString = getFormattedDate();
+
     return (
         <div className="wiki-card-overlay">
             <div className="wiki-card">
-                <button className="wiki-close" onClick={onClose}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <button className="wiki-close" onClick={onClose} aria-label="Close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M18 6L6 18M6 6l12 12" />
                     </svg>
                 </button>
@@ -86,31 +111,33 @@ export default function WikiCard({ event, onClose }) {
                     </div>
                 ) : data && (
                     <div className="wiki-content">
-                        {data.thumbnail && (
-                            <div className="wiki-image-wrap">
-                                <img src={data.thumbnail.source} alt={data.title} className="wiki-image" />
-                                <div className="wiki-image-gradient" />
-                            </div>
-                        )}
-                        
                         <div className="wiki-body">
-                            <div className="wiki-eyebrow">Data Intelligence / Context</div>
                             <h2 className="wiki-title">{data.title}</h2>
+                            {dateString && <div className="wiki-date">{dateString}</div>}
+                            
                             <p className="wiki-extract">{data.extract}</p>
                             
                             <div className="wiki-footer">
+                                <span className="wiki-footer-text">(more option to vew more details about events)</span>
                                 <a 
                                     href={data.content_urls?.desktop?.page} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="wiki-link"
                                 >
-                                    <span>Read Full Archive</span>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
-                                    </svg>
+                                    more.
                                 </a>
                             </div>
+
+                            {data.thumbnail ? (
+                                <div className="wiki-image-wrap">
+                                    <img src={data.thumbnail.source} alt={data.title} className="wiki-image" />
+                                </div>
+                            ) : (
+                                <div className="wiki-image-wrap wiki-image-placeholder">
+                                    <span>REFERENCE REAL IMAGE</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
