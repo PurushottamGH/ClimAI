@@ -35,7 +35,7 @@ app = FastAPI(title="ClimAI API", version="3.5.2-pro")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,  # Set to True for better compatibility with standard fetch
+    allow_credentials=False,  # Must be False when allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
