@@ -418,16 +418,21 @@ export default function XaiPanel({ open, onClose }) {
 
                                     const grid = buildGridData();
 
+                                    // Only show structured doc layout for specific data intents
+                                    const showStructuredDoc = ['cyclone', 'earthquake', 'tsunami', 'weather', 'disaster'].includes(primaryIntent) && (cyclone || earthquake || tsunami || weather);
+
                                     return (
                                         <div className="tech-doc">
-                                            {/* ── HEADER ── */}
-                                            <div className="tech-header">
-                                                <span className="tech-header-left">CLIMAI INTELLIGENCE</span>
-                                                <span className="tech-header-right">SERIAL {Math.floor(Math.random() * 9000 + 1000)}-{primaryIntent.toUpperCase()}</span>
-                                            </div>
+                                            {/* ── HEADER — only show for structured data queries ── */}
+                                            {showStructuredDoc && (
+                                                <div className="tech-header">
+                                                    <span className="tech-header-left">CLIMAI INTELLIGENCE</span>
+                                                    <span className="tech-header-right">SERIAL {Math.floor(Math.random() * 9000 + 1000)}-{primaryIntent.toUpperCase()}</span>
+                                                </div>
+                                            )}
 
-                                            {/* ── TITLE BLOCK ── */}
-                                            <div className="tech-title-block">
+                                            {/* ── TITLE BLOCK — only for structured queries ── */}
+                                            {showStructuredDoc && <div className="tech-title-block">
                                                 <div className="tech-title-left">
                                                     <div className="tech-title-big">{grid.subtitle}</div>
                                                 </div>
@@ -435,10 +440,10 @@ export default function XaiPanel({ open, onClose }) {
                                                     <div>{grid.classification}</div>
                                                     <div>CLASSIFICATION: ANALYSIS REPORT</div>
                                                 </div>
-                                            </div>
+                                            </div>}
 
-                                            {/* ── 3-COLUMN DATA GRID ── */}
-                                            <div className="tech-grid">
+                                            {/* ── 3-COLUMN DATA GRID — only for structured queries ── */}
+                                            {showStructuredDoc && <div className="tech-grid">
                                                 <div className="tech-col">
                                                     {grid.leftCells.map((c, i) => (
                                                         <div key={i} className="tech-cell">
@@ -463,7 +468,7 @@ export default function XaiPanel({ open, onClose }) {
                                                         </div>
                                                     ))}
                                                 </div>
-                                            </div>
+                                            </div>}
 
                                             {/* (Viewport removed for clean aerospace layout) */}
 
