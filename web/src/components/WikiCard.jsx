@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { api } from '../api';
 import './WikiCard.css';
 
 export default function WikiCard({ event, onClose }) {
@@ -45,9 +46,7 @@ export default function WikiCard({ event, onClose }) {
             }
 
             try {
-                const searchUrl = `/api/event-context?${queryParams.toString()}`;
-                const res = await fetch(searchUrl);
-                const data = await res.json();
+                const data = await api.getEventContext(queryParams.toString());
                 
                 if (data.error) {
                     setError('Intelligence failure: ' + data.error);
@@ -56,7 +55,7 @@ export default function WikiCard({ event, onClose }) {
                 }
             } catch (err) {
                 console.error('API fetch error:', err);
-                setError('Failed to fetch event context.');
+                setError('Failed to fetch event context. Error: ' + err.message);
             } finally {
                 setLoading(false);
             }

@@ -19,4 +19,5 @@ export const api = {
     getSeasonal: () => axios.get(`${API_BASE}/seasonal`).then(r => r.data),
     getReport: (days = 7) => axios.get(`${API_BASE}/report?days=${days}`).then(r => r.data),
     askClimAI: (query) => axios.get(`${API_BASE}/ask?q=${encodeURIComponent(query)}`).then(r => r.data),
+    getEventContext: (queryParams) => axios.get(`${API_BASE}/event-context?${queryParams}`).then(r => r.data),
 };
