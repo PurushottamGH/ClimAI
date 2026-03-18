@@ -3,6 +3,7 @@ import Map, { Source, Layer } from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
 import { ScatterplotLayer, PathLayer } from '@deck.gl/layers';
+import WikiCard from './WikiCard';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './WorldMap.css';
 
@@ -72,6 +73,7 @@ export default function WorldMap({
   tempMapData = []
 }) {
   const [hoverInfo, setHoverInfo] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   // ═══════════════════════════════
   // LAYER: Earthquakes
@@ -92,6 +94,16 @@ export default function WorldMap({
     getFillColor: d => [...getMagColorArr(d.magnitude || 0), 140],
     getLineColor: d => getMagColorArr(d.magnitude || 0),
     onHover: info => setHoverInfo(info),
+    onClick: info => {
+      if (info.object) {
+        setSelectedEvent({
+          type: 'earthquake',
+          place: info.object.place,
+          time: info.object.time,
+          magnitude: info.object.magnitude
+        });
+      }
+    },
     visible: category === 'earthquake'
   }), [earthquakes, category]);
 
@@ -195,6 +207,15 @@ export default function WorldMap({
     getFillColor: [255, 255, 255, 255],
     getLineColor: d => getCycloneCatColorArr(d.category),
     onHover: info => setHoverInfo({ ...info, isCycloneEye: true }),
+    onClick: info => {
+      if (info.object) {
+        setSelectedEvent({
+          type: 'cyclone',
+          name: info.object.name,
+          category: info.object.category
+        });
+      }
+    },
     visible: category === 'cyclone'
   }), [cyclones, category]);
 
@@ -216,6 +237,15 @@ export default function WorldMap({
     getFillColor: d => [...getTsunamiMagColorArr(d.magnitude || 0), 200],
     getLineColor: [255, 255, 255],
     onHover: info => setHoverInfo(info),
+    onClick: info => {
+      if (info.object) {
+        setSelectedEvent({
+          type: 'tsunami',
+          name: info.object.name,
+          location: info.object.location
+        });
+      }
+    },
     visible: category === 'tsunami'
   }), [tsunamis, category]);
 
@@ -338,6 +368,11 @@ export default function WorldMap({
         </Map>
         {renderTooltip()}
       </DeckGL>
+
+      <WikiCard 
+        event={selectedEvent} 
+        onClose={() => setSelectedEvent(null)} 
+      />
     </div>
   );
 }
