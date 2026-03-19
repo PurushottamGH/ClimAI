@@ -1,275 +1,367 @@
-import { useState, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import './EventsTimeline.css';
 
 const TIMELINE_EVENTS = [
-    {
-        id: 1,
-        title: 'Western North America Heatwave',
-        date: 'June 2021',
-        year: 2021,
-        fraction: 0.15,
-        location: 'North America',
-        type: 'heatwave',
-        color: '#f97316',
-        detail: 'Record High: 49.6°C',
-        description: 'Record temperatures exceeding 49°C triggered severe wildfires and extreme environmental stress across the Pacific Northwest.',
-        imgUrl: '/events/1_heatwave.jpg'
-    },
-    {
-        id: 2,
-        title: 'European Floods',
-        date: 'July 2021',
-        year: 2021,
-        fraction: 0.25,
-        location: 'Germany & Belgium',
-        type: 'flood',
-        color: '#0ea5e9',
-        detail: 'Impact: Catastrophic Rainfall',
-        description: 'Severe and unprecedented rainfall caused catastrophic flash flooding across several European nations, destroying infrastructure.',
-        imgUrl: '/events/2_europe_floods.jpg'
-    },
-    {
-        id: 3,
-        title: 'Pakistan Mega Floods',
-        date: 'August 2022',
-        year: 2022,
-        fraction: 0.45,
-        location: 'Pakistan',
-        type: 'flood',
-        color: '#0ea5e9',
-        detail: 'Impact: 1/3 Country Submerged',
-        description: 'Unprecedented monsoon rainfall exacerbated by melting glaciers submerged large parts of the country.',
-        imgUrl: '/events/3_pakistan_floods.jpg'
-    },
-    {
-        id: 4,
-        title: 'Hunga Tonga Eruption',
-        date: 'January 2022',
-        year: 2022,
-        fraction: 0.35,
-        location: 'Pacific Ocean',
-        type: 'volcano',
-        color: '#ef4444',
-        detail: 'Type: Submarine Eruption',
-        description: 'A massive underwater volcanic eruption generated global atmospheric shockwaves and Pacific-wide tsunami effects.',
-        imgUrl: '/events/4_tonga.jpg'
-    },
-    {
-        id: 5,
-        title: 'Türkiye–Syria Earthquake',
-        date: 'February 2023',
-        year: 2023,
-        fraction: 0.55,
-        location: 'Southeastern Türkiye',
-        type: 'earthquake',
-        color: '#eab308',
-        detail: 'Magnitude: 7.8',
-        description: 'One of the strongest earthquakes in the region in recent decades, causing major infrastructure damage.',
-        imgUrl: '/events/5_turkey.jpg'
-    },
-    {
-        id: 6,
-        title: 'Global Ocean Temperature Record',
-        date: 'August 2023',
-        year: 2023,
-        fraction: 0.65,
-        location: 'Global Oceans',
-        type: 'heatwave',
-        color: '#f97316',
-        detail: 'Anomaly: +0.8°C avg',
-        description: 'Ocean surface temperatures reached the highest levels ever recorded, severely impacting marine ecosystems.',
-        imgUrl: '/events/6_ocean.jpg'
-    },
-    {
-        id: 7,
-        title: 'Japan Noto Peninsula Quake',
-        date: 'January 2024',
-        year: 2024,
-        fraction: 0.72,
-        location: 'Japan',
-        type: 'earthquake',
-        color: '#eab308',
-        detail: 'Magnitude: 7.5',
-        description: 'Significant seismic activity impacting coastal communities, triggering local tsunami warnings and structural damage.',
-        imgUrl: '/events/7_noto.jpg'
-    },
-    {
-        id: 8,
-        title: 'Atlantic Hurricane Surge',
-        date: 'September 2024',
-        year: 2024,
-        fraction: 0.82,
-        location: 'Atlantic Basin',
-        type: 'cyclone',
-        color: '#8b5cf6',
-        detail: 'Activity: Hyperactive',
-        description: 'Elevated ocean temperatures led to stronger, more rapidly intensifying, and more frequent cyclonic storms.',
-        imgUrl: '/events/8_hurricane.jpg'
-    },
-    {
-        id: 9,
-        title: 'Extreme Heatwave Trends',
-        date: 'July 2025',
-        year: 2025,
-        fraction: 0.90,
-        location: 'Global',
-        type: 'heatwave',
-        color: '#f97316',
-        detail: 'Status: Rising Anomaly',
-        description: 'Rising temperature anomalies recorded consistently across multiple equatorial and mid-latitude regions.',
-        imgUrl: '/events/9_future_heat.jpg'
-    },
-    {
-        id: 10,
-        title: 'AI Climate Forecast',
-        date: '2026 Outlook',
-        year: 2026,
-        fraction: 0.98,
-        location: 'Global',
-        type: 'forecast',
-        color: '#a855f7',
-        detail: 'Prediction: Volatility',
-        description: 'AI analysis suggests an exponentially increasing frequency of extreme weather events in historically vulnerable regions.',
-        imgUrl: '/events/10_ai.jpg'
-    }
+  {
+    id: "EVT-2021-01",
+    query: "2021 Western North America heat wave",
+    category: "Extreme Heat",
+    type: "heatwave",
+    x: 240, y: 440,
+    region: "North America",
+    detail: "Category: Heatwave",
+  },
+  {
+    id: "EVT-2021-02",
+    query: "2021 European floods",
+    category: "Flood",
+    type: "flood",
+    x: 620, y: 250,
+    region: "Europe",
+    detail: "Category: Catastrophic Flooding",
+  },
+  {
+    id: "EVT-2022-01",
+    query: "2022 Pakistan floods",
+    category: "Flood",
+    type: "flood",
+    x: 700, y: 590,
+    region: "Asia",
+    detail: "Category: Mega Flood",
+  },
+  {
+    id: "EVT-2022-02",
+    query: "2022 Hunga Tonga–Hunga Haʻapai eruption",
+    category: "Volcano / Tsunami",
+    type: "volcano",
+    x: 100, y: 130,
+    region: "Pacific",
+    detail: "Category: Submarine Eruption",
+  },
+  {
+    id: "EVT-2023-01",
+    query: "2023 Turkey–Syria earthquake",
+    category: "Earthquake",
+    type: "earthquake",
+    x: 950, y: 100,
+    region: "Middle East",
+    detail: "Category: Seismic",
+  },
+  {
+    id: "EVT-2023-02",
+    query: "2023 Hawaii wildfires",
+    category: "Wildfire",
+    type: "wildfire",
+    x: 1100, y: 400,
+    region: "Pacific",
+    detail: "Category: Wildfire",
+  },
+  {
+    id: "EVT-2024-01",
+    query: "2024 Noto earthquake",
+    category: "Earthquake",
+    type: "earthquake",
+    x: 50, y: 700,
+    region: "Asia",
+    detail: "Category: Seismic",
+  },
+  {
+    id: "EVT-2024-02",
+    query: "2024 Atlantic hurricane season",
+    category: "Cyclone",
+    type: "cyclone",
+    x: 400, y: 780,
+    region: "Atlantic Basin",
+    detail: "Category: Hurricane",
+  }
 ];
 
-const FILTERS = [
-    { id: 'all', label: 'All Events' },
-    { id: 'earthquake', label: 'Earthquakes' },
-    { id: 'cyclone', label: 'Cyclones' },
-    { id: 'flood', label: 'Floods' },
-    { id: 'heatwave', label: 'Heatwaves' },
-    { id: 'volcano', label: 'Volcanic' }
-];
+const FILTERS = {
+  type: ["earthquake", "flood", "heatwave", "cyclone", "volcano", "wildfire"],
+  region: ["North America", "Europe", "Asia", "Pacific", "Middle East", "Atlantic Basin"]
+};
+
+const NAV_ITEMS = ["Events Timeline", "Index", "About", "Contact"];
+
+// Fetch Wikipedia Data
+async function fetchWikiData(query) {
+  try {
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`;
+    const searchRes = await fetch(searchUrl);
+    const searchData = await searchRes.json();
+    const title = searchData?.query?.search?.[0]?.title;
+    if (!title) return null;
+
+    const summaryUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+    const summaryRes = await fetch(summaryUrl);
+    const summaryData = await summaryRes.json();
+
+    let hiRes = null;
+    if (summaryData?.thumbnail?.source) {
+      hiRes = summaryData.originalimage?.source || summaryData.thumbnail.source.replace(/\/\d+px-/, '/600px-');
+    }
+    
+    return {
+      title: summaryData.title,
+      src: hiRes,
+      extract: summaryData.extract,
+      url: summaryData.content_urls?.desktop?.page,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export default function EventsTimeline() {
-    const [filter, setFilter] = useState('all');
-    const [hoveredEventId, setHoveredEventId] = useState(null);
+  const [selectedProject, setSelectedProject] = useState("EVT-2021-01");
+  const [activeFilters, setActiveFilters] = useState([]);
+  
+  const [wikiData, setWikiData] = useState({});
+  const canvasRef = useRef(null);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const svgRef = useRef(null);
+  
+  // Preload Wikipedia Data
+  useEffect(() => {
+    const loadAllWikiData = async () => {
+      const results = {};
+      for (const evt of TIMELINE_EVENTS) {
+        const data = await fetchWikiData(evt.query);
+        if (data) {
+          results[evt.id] = data;
+        }
+      }
+      setWikiData(results);
+    };
+    loadAllWikiData();
+  }, []);
 
-    const filteredEvents = useMemo(() => {
-        if (filter === 'all') return TIMELINE_EVENTS;
-        return TIMELINE_EVENTS.filter(e => e.type === filter);
-    }, [filter]);
-
-    return (
-        <div className="events-timeline-container">
-            {/* ── Header Area ── */}
-            <div className="events-header">
-                <div className="events-title-area">
-                    <h1 className="events-title">Climate Events Timeline</h1>
-                    <p className="events-subtitle">
-                        Major global environmental events, seismic activities, and climate anomalies monitored between 2021 and 2026.
-                    </p>
-                </div>
-                
-                <div className="events-filters">
-                    {FILTERS.map(f => (
-                        <button
-                            key={f.id}
-                            className={`filter-btn ${filter === f.id ? 'active' : ''}`}
-                            onClick={() => setFilter(f.id)}
-                        >
-                            {f.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* ── Content Area ── */}
-            <div className="events-content">
-                
-                {/* ── Timeline Track ── */}
-                <div className="timeline-viewer">
-                    <div className="timeline-line" />
-                    
-                    <div className="timeline-year-markers">
-                        {[2021, 2022, 2023, 2024, 2025, 2026].map(y => (
-                            <div key={y} className="timeline-year">
-                                <div className="year-tick" />
-                                <span className="year-label">{y}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="event-nodes-container">
-                        {filteredEvents.map((evt, i) => {
-                            const isHovered = hoveredEventId === evt.id;
-                            // Offset cards upwards or downwards to alternate, and leftwards
-                            const isTop = i % 2 === 0;
-                            const posClass = isTop ? 'position-top' : 'position-bottom';
-                            const indexStr = String(i + 1).padStart(2, '0');
-                            
-                            return (
-                                <div 
-                                    key={evt.id} 
-                                    className={`event-node-wrapper ${isHovered ? 'active' : ''}`}
-                                    style={{ left: `${evt.fraction * 100}%` }}
-                                    onMouseEnter={() => setHoveredEventId(evt.id)}
-                                    onMouseLeave={() => setHoveredEventId(null)}
-                                >
-                                    <div 
-                                        className="event-node" 
-                                        style={{ backgroundColor: evt.color, color: evt.color }} 
-                                    />
-                                    
-                                    {/* SVG Angled Line Connector */}
-                                    <svg className={`angled-connector ${posClass} ${isHovered ? 'show' : ''}`} width="120" height="100">
-                                      {isTop ? (
-                                        <polyline points="0,100 0,50 80,0 120,0" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
-                                      ) : (
-                                        <polyline points="0,0 0,50 80,100 120,100" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
-                                      )}
-                                    </svg>
-
-                                    {/* Premium Floating Card */}
-                                    <div className={`premium-event-card ${posClass} ${isHovered ? 'show' : ''}`}>
-                                        <img src={evt.imgUrl} alt={evt.title} className="premium-card-img" />
-                                        
-                                        <div className="premium-card-body">
-                                            <div className="premium-title-row">
-                                                <div className="premium-index">{indexStr}</div>
-                                                <div className="premium-titles">
-                                                    <div className="premium-title">{evt.title}</div>
-                                                    <div className="premium-detail" style={{ color: evt.color }}>
-                                                        {evt.detail}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="premium-desc-box">
-                                                <div className="premium-meta">
-                                                    <span>{evt.date}</span>
-                                                    <span className="premium-dot">•</span>
-                                                    <span>{evt.location}</span>
-                                                </div>
-                                                <p className="premium-desc-text">{evt.description}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* ── AI Insight Panel ── */}
-                <div className="ai-insight-panel">
-                    <div className="insight-header">
-                        <svg className="insight-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-                        </svg>
-                        <span className="insight-title">AI Climate Insight</span>
-                    </div>
-                    <div className="insight-text">
-                        "Between 2021 and 2024, extreme weather and geological events increased significantly. Rising ocean heat content strongly correlates with the surge in cyclonic activity and thermal anomalies, while tectonic shifts remain unpredictable but severe."
-                    </div>
-                    <div className="insight-footer">
-                        <span className="insight-model">Powered by xAI Synthesis</span>
-                    </div>
-                </div>
-
-            </div>
-        </div>
+  const toggleFilter = (f) => {
+    setActiveFilters((prev) =>
+      prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]
     );
+  };
+
+  const clearFilters = () => setActiveFilters([]);
+
+  const handleMouseDown = useCallback((e) => {
+    if (e.target.closest(".project-card-wrapper")) return;
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  }, [pan]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isPanning) return;
+    setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+  }, [isPanning, panStart]);
+
+  const handleMouseUp = useCallback(() => setIsPanning(false), []);
+
+  // Generate curved paths between projects
+  const generatePaths = () => {
+    const paths = [];
+    for (let i = 0; i < TIMELINE_EVENTS.length - 1; i++) {
+      const a = TIMELINE_EVENTS[i];
+      const b = TIMELINE_EVENTS[i + 1];
+      const ax = a.x + 60, ay = a.y + 30;
+      const bx = b.x + 60, by = b.y + 30;
+      const cx1 = ax + (bx - ax) * 0.5 + (Math.sin(i * 2) * 120);
+      const cy1 = ay - 80 + (Math.cos(i * 3) * 60);
+      const cx2 = bx - (bx - ax) * 0.5 + (Math.cos(i * 2) * 120);
+      const cy2 = by + 80 + (Math.sin(i * 3) * 60);
+      paths.push(`M ${ax} ${ay} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${bx} ${by}`);
+    }
+    if (TIMELINE_EVENTS.length > 3) {
+      const a = TIMELINE_EVENTS[0], b = TIMELINE_EVENTS[3];
+      paths.push(`M ${a.x+60} ${a.y+30} C ${a.x+200} ${a.y-100}, ${b.x-200} ${b.y+200}, ${b.x+60} ${b.y+30}`);
+    }
+    if (TIMELINE_EVENTS.length > 5) {
+      const a = TIMELINE_EVENTS[2], b = TIMELINE_EVENTS[5];
+      paths.push(`M ${a.x+60} ${a.y+30} C ${a.x+300} ${a.y+300}, ${b.x-200} ${b.y-100}, ${b.x+60} ${b.y+30}`);
+    }
+    return paths;
+  };
+
+  const selected = TIMELINE_EVENTS.find((p) => p.id === selectedProject);
+
+  return (
+    <div className="events-timeline-container">
+      {/* ── Top Nav Header ── */}
+      <header className="events-header">
+        <div className="header-left">
+          <span className="header-brand">ClimAI</span>
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item}
+              className={`nav-btn ${item === "Events Timeline" ? "active" : ""}`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Filters ── */}
+        <div className="header-filters-group">
+          {Object.entries(FILTERS).map(([group, items]) => (
+            <div key={group} style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ color: '#555', minWidth: '50px' }}>{group}:</span>
+              {items.map((item) => (
+                <button
+                  key={String(item)}
+                  onClick={() => toggleFilter(String(item))}
+                  className={`filter-item-btn ${activeFilters.includes(String(item)) ? "active" : ""}`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* ── Controls (Clear, Zoom) ── */}
+        <div className="header-controls">
+          <button onClick={clearFilters} className="clear-btn">
+            Clear Filters
+          </button>
+          <div className="zoom-slider-container">
+            <div className="zoom-slider-track">
+              <input
+                type="range"
+                min={0.3}
+                max={2}
+                step={0.05}
+                value={zoom}
+                onChange={(e) => setZoom(parseFloat(e.target.value))}
+                className="zoom-slider-input"
+              />
+              <div
+                className="zoom-slider-thumb"
+                style={{ left: `${((zoom - 0.3) / 1.7) * 100}%`, transform: "translate(-50%, -50%)" }}
+              />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Pannable Canvas ── */}
+      <div
+        ref={canvasRef}
+        className="canvas-viewport"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <div
+          className="canvas-content"
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
+          }}
+        >
+          {/* SVG Map Lines */}
+          <svg ref={svgRef} className="svg-layer">
+            {generatePaths().map((d, i) => (
+              <path key={i} d={d} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
+            ))}
+          </svg>
+
+          {/* Background Thumbnails (scattered) */}
+          {TIMELINE_EVENTS.map((p, i) => {
+            const img = wikiData[p.id]?.src;
+            if (!img) return null;
+            return (
+              <div
+                key={`bg-${p.id}`}
+                className="background-thumbnail"
+                style={{
+                  left: (p.x + 300 + i * 73) % 1200,
+                  top: (p.y + 200 + i * 97) % 850,
+                }}
+              >
+                <img src={img} alt="" />
+              </div>
+            );
+          })}
+
+          {/* Real Project/Event Cards */}
+          {TIMELINE_EVENTS.map((p) => {
+             // If filters active, check if it matches
+             if (activeFilters.length > 0 && !activeFilters.includes(p.type) && !activeFilters.includes(p.region)) {
+                return null;
+             }
+
+             const isSelected = selectedProject === p.id;
+             const data = wikiData[p.id];
+            
+             return (
+               <div
+                 key={p.id}
+                 className={`project-card-wrapper ${isSelected ? 'selected' : ''}`}
+                 style={{ left: p.x, top: p.y }}
+                 onClick={() => setSelectedProject(p.id)}
+               >
+                 <div className={`project-card ${isSelected ? 'expanded' : 'collapsed'}`}>
+                   <div className="card-header">
+                     <span className="card-id">{p.id}</span>
+                     <div className="card-dot" />
+                   </div>
+
+                   <div className="card-image-container">
+                     <img
+                       src={data?.src || 'data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=='}
+                       alt={data?.title || p.query}
+                       className="card-image"
+                     />
+                   </div>
+
+                   {isSelected && (
+                     <div className="card-details">
+                       <div className="detail-row">
+                         <span className="detail-label">Event:</span>
+                         <span className="detail-value">{data?.title || p.query}</span>
+                       </div>
+                       <div className="detail-row" style={{ marginTop: '4px' }}>
+                         <span className="detail-label">Region:</span>
+                         <span className="detail-value">{p.region}</span>
+                       </div>
+                       <div className="detail-row" style={{ marginTop: '4px' }}>
+                         <span className="detail-label">Focus:</span>
+                         <span className="detail-value">{p.detail}</span>
+                       </div>
+                       
+                       <div className="card-extract">
+                         {data?.extract || 'Loading summary from Wikipedia...'}
+                       </div>
+
+                       {data?.url && (
+                         <a 
+                           href={data.url} target="_blank" rel="noreferrer"
+                           className="card-link"
+                         >
+                           Read more on Wikipedia ↗
+                         </a>
+                       )}
+                     </div>
+                   )}
+                 </div>
+               </div>
+             );
+          })}
+        </div>
+      </div>
+
+      {/* ── Bottom Bar ── */}
+      {selected && (
+        <div className="bottom-bar">
+          <span className="selected-id">Selected: {selected.query}</span>
+          <button className="view-btn" onClick={() => { if(wikiData[selected.id]?.url) window.open(wikiData[selected.id].url, '_blank') }}>
+            Wikipedia Article
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }

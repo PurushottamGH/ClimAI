@@ -124,8 +124,8 @@ function buildEventContext(event) {
     return null;
 }
 
-// ── Fetch real image from Wikipedia for the event ──
-async function fetchWikiImage(query) {
+// ── Fetch real image and text from Wikipedia for the event ──
+async function fetchWikiData(query) {
     try {
         const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`;
         const searchRes = await fetch(searchUrl);
@@ -137,16 +137,18 @@ async function fetchWikiImage(query) {
         const summaryRes = await fetch(summaryUrl);
         const summaryData = await summaryRes.json();
 
+        let hiRes = null;
         if (summaryData?.thumbnail?.source) {
             // Get higher resolution by replacing thumbnail size
-            const hiRes = summaryData.originalimage?.source || summaryData.thumbnail.source.replace(/\/\d+px-/, '/600px-');
-            return {
-                src: hiRes,
-                caption: summaryData.title,
-                url: summaryData.content_urls?.desktop?.page,
-            };
+            hiRes = summaryData.originalimage?.source || summaryData.thumbnail.source.replace(/\/\d+px-/, '/600px-');
         }
-        return null;
+        
+        return {
+            src: hiRes,
+            caption: summaryData.title,
+            url: summaryData.content_urls?.desktop?.page,
+            extract: summaryData.extract,
+        };
     } catch {
         return null;
     }
@@ -168,10 +170,16 @@ export default function WikiCard({ event, onClose }) {
         // Fetch real Wikipedia image and Groq LLM Intelligence
         const fetchIntelligence = async () => {
             try {
-                // 1. Image
+                // 1. Wikipedia actual data (Image + Text)
                 if (ctx?.imageQuery) {
-                    fetchWikiImage(ctx.imageQuery).then(info => {
+                    fetchWikiData(ctx.imageQuery).then(info => {
                         setImageInfo(info);
+                        if (info && info.extract) {
+                            setData(prev => ({
+                                ...prev,
+                                what_happened: info.extract
+                            }));
+                        }
                         setImgLoading(false);
                     });
                 } else {
@@ -189,7 +197,7 @@ export default function WikiCard({ event, onClose }) {
                 if (llmData && !llmData.error) {
                     setData(prev => ({
                         ...prev,
-                        what_happened: llmData.summary || prev.what_happened,
+                        // We let Wikipedia extract drive 'what_happened', only use LLM for the analytical parts
                         why_it_happened: llmData.reason || prev.why_it_happened,
                         impact: llmData.impact || prev.impact,
                     }));

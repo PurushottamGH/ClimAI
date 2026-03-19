@@ -97,10 +97,8 @@ export default function WorldMap({
     onClick: info => {
       if (info.object) {
         setSelectedEvent({
-          type: 'earthquake',
-          place: info.object.place,
-          time: info.object.time,
-          magnitude: info.object.magnitude
+          ...info.object,
+          type: 'earthquake'
         });
       }
     },
@@ -209,13 +207,12 @@ export default function WorldMap({
     onHover: info => setHoverInfo({ ...info, isCycloneEye: true }),
     onClick: info => {
       if (info.object) {
-        const sortedTrack = info.object.track[0].time ? [...info.object.track].sort((a, b) => new Date(a.time) - new Date(b.time)) : info.object.track;
-        const latest = sortedTrack[sortedTrack.length - 1];
+        const sortedTrack = info.object.track && info.object.track.length > 0 && info.object.track[0].time ? [...info.object.track].sort((a, b) => new Date(a.time) - new Date(b.time)) : info.object.track;
+        const latest = sortedTrack && sortedTrack.length > 0 ? sortedTrack[sortedTrack.length - 1] : null;
         setSelectedEvent({
+          ...info.object,
           type: 'cyclone',
-          name: info.object.name,
-          category: info.object.category,
-          time: latest?.time
+          time: latest?.time || info.object.dates || info.object.year
         });
       }
     },
@@ -243,12 +240,8 @@ export default function WorldMap({
     onClick: info => {
       if (info.object) {
         setSelectedEvent({
-          type: 'tsunami',
-          name: info.object.name,
-          location: info.object.location,
-          year: info.object.year,
-          month: info.object.month,
-          day: info.object.day
+          ...info.object,
+          type: 'tsunami'
         });
       }
     },
