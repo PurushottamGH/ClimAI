@@ -64,22 +64,41 @@ export default function WikiCard({ event, onClose }) {
 
         // 2. Fetch authentic Wikipedia Data
         fetchWikiData(query).then(async data => {
-            // 3. Fallback Image Handler (If article has no image, fetch a generic high-quality one)
+            // 3. Authentic Image Search Fallback (Wikimedia Commons)
+            // If the specific Wikipedia article lacks a primary photo, explicitly search the global Wikimedia database for real photos of this exact event.
             if (data && !data.src) {
-                const fallbackCategoryMap = {
-                    'earthquake': 'Earthquake',
-                    'cyclone': 'Tropical cyclone',
-                    'tsunami': 'Tsunami',
-                    'wildfire': 'Wildfire',
-                    'flood': 'Flood',
-                    'heatwave': 'Heat wave'
-                };
-                const fallbackQuery = fallbackCategoryMap[event.type] || 'Natural disaster';
-                const fallbackData = await fetchWikiData(fallbackQuery);
-                if (fallbackData && fallbackData.src) {
-                    data.src = fallbackData.src;
-                }
+                try {
+                    const commonsQuery = encodeURIComponent(query);
+                    const commonsUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${commonsQuery}&gsrnamespace=6&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json&origin=*`;
+                    const res = await fetch(commonsUrl);
+                    const commonsData = await res.json();
+                    if (commonsData.query && commonsData.query.pages) {
+                        const pages = Object.values(commonsData.query.pages);
+                        if (pages.length > 0 && pages[0].imageinfo && pages[0].imageinfo[0]) {
+                            data.src = pages[0].imageinfo[0].thumburl;
+                        }
+                    }
+                } catch (e) { console.error(e); }
             }
+            
+            // 4. Region-level Authentic Image Search
+            // If no specific event photo exists, search for historical damage photos from that exact region/country.
+            if (data && !data.src && region) {
+                try {
+                    const country = region.split(',').pop().trim();
+                    const backupQuery = encodeURIComponent(`${country} ${event.type} damage`);
+                    const backupUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${backupQuery}&gsrnamespace=6&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json&origin=*`;
+                    const res = await fetch(backupUrl);
+                    const backupData = await res.json();
+                    if (backupData.query && backupData.query.pages) {
+                        const pages = Object.values(backupData.query.pages);
+                        if (pages.length > 0 && pages[0].imageinfo && pages[0].imageinfo[0]) {
+                            data.src = pages[0].imageinfo[0].thumburl;
+                        }
+                    }
+                } catch (e) { console.error(e); }
+            }
+
             setWikiData(data);
             setIsLoading(false);
         });
