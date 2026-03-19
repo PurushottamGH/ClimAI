@@ -22,7 +22,7 @@ const TIMELINE_EVENTS = [
   { id: "EVT-2023-02", query: "2023 Hawaii wildfires", type: "wildfire", x: 3050, y: 650, region: "Pacific", detail: "Wildfire" },
   { id: "EVT-2024-01", query: "2024 Noto earthquake", type: "earthquake", x: 3250, y: 300, region: "Asia", detail: "Seismic" },
   { id: "EVT-2024-02", query: "2024 Atlantic hurricane season", type: "cyclone", x: 3400, y: 850, region: "Atlantic", detail: "Hurricane" }
-];
+].sort((a, b) => a.x - b.x);
 
 const TYPE_FILTERS = ["earthquake", "flood", "heatwave", "cyclone", "volcano", "wildfire"];
 
@@ -56,16 +56,17 @@ async function fetchWikiData(query) {
 }
 
 export default function EventsTimeline() {
-  const [selectedProject, setSelectedProject] = useState("EVT-2021-01");
+  const [selectedProject, setSelectedProject] = useState("EVT-2004");
   const [activeFilters, setActiveFilters] = useState([]);
-  
   const [wikiData, setWikiData] = useState({});
-  const canvasRef = useRef(null);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const svgRef = useRef(null);
+
+  // ── 60FPS Smooth Operator Panning ──
+  const canvasViewportRef = useRef(null);
+  const canvasContentRef = useRef(null);
+  const isPanning = useRef(false);
+  const panStart = useRef({ x: 0, y: 0 });
+  const currentPan = useRef({ x: 0, y: 0 });
   
   // Preload Wikipedia Data
   useEffect(() => {
@@ -82,6 +83,16 @@ export default function EventsTimeline() {
     loadAllWikiData();
   }, []);
 
+  const applyTransform = useCallback(() => {
+    if (canvasContentRef.current) {
+      canvasContentRef.current.style.transform = `translate(${currentPan.current.x}px, ${currentPan.current.y}px) scale(${zoom})`;
+    }
+  }, [zoom]);
+
+  useEffect(() => {
+    applyTransform();
+  }, [zoom, applyTransform]);
+
   const toggleFilter = (f) => {
     setActiveFilters((prev) =>
       prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]
@@ -92,31 +103,37 @@ export default function EventsTimeline() {
 
   const handleMouseDown = useCallback((e) => {
     if (e.target.closest(".project-card-wrapper")) return;
-    setIsPanning(true);
-    setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-  }, [pan]);
+    isPanning.current = true;
+    if (canvasViewportRef.current) canvasViewportRef.current.style.cursor = 'grabbing';
+    panStart.current = { x: e.clientX - currentPan.current.x, y: e.clientY - currentPan.current.y };
+  }, []);
 
   const handleMouseMove = useCallback((e) => {
-    if (!isPanning) return;
-    setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
-  }, [isPanning, panStart]);
+    if (!isPanning.current) return;
+    currentPan.current = { x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y };
+    applyTransform();
+  }, [applyTransform]);
 
-  const handleMouseUp = useCallback(() => setIsPanning(false), []);
+  const handleMouseUp = useCallback(() => {
+    isPanning.current = false;
+    if (canvasViewportRef.current) canvasViewportRef.current.style.cursor = 'grab';
+  }, []);
 
-  // Generate curved paths between projects
+  // Generate dynamically connected paths ignoring filtered out items
   const generatePaths = () => {
     const paths = [];
-    for (let i = 0; i < TIMELINE_EVENTS.length - 1; i++) {
-      const a = TIMELINE_EVENTS[i];
-      const b = TIMELINE_EVENTS[i + 1];
+    const visibleEvents = TIMELINE_EVENTS.filter(p => activeFilters.length === 0 || activeFilters.includes(p.type));
+
+    for (let i = 0; i < visibleEvents.length - 1; i++) {
+      const a = visibleEvents[i];
+      const b = visibleEvents[i + 1];
       const ax = a.x + 60, ay = a.y + 30;
       const bx = b.x + 60, by = b.y + 30;
-      // Generates smoother forward-leaping curves
       const distanceX = Math.abs(bx - ax);
-      const cx1 = ax + distanceX * 0.3;
-      const cy1 = ay + ((i % 2 === 0) ? -150 : 150);
-      const cx2 = bx - distanceX * 0.3;
-      const cy2 = by + ((i % 2 === 0) ? 150 : -150);
+      const cx1 = ax + distanceX * 0.4;
+      const cy1 = ay;
+      const cx2 = bx - distanceX * 0.4;
+      const cy2 = by;
       paths.push(`M ${ax} ${ay} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${bx} ${by}`);
     }
     return paths;
@@ -129,7 +146,7 @@ export default function EventsTimeline() {
       {/* ── Top Header ── */}
       <header className="events-header">
         <div className="header-left">
-          <span className="header-brand">ClimAI</span>
+          <span className="header-brand">ClimAI Timeline</span>
         </div>
 
         {/* ── Controls (Clear, Zoom) ── */}
@@ -173,7 +190,7 @@ export default function EventsTimeline() {
 
       {/* ── Pannable Canvas ── */}
       <div
-        ref={canvasRef}
+        ref={canvasViewportRef}
         className="canvas-viewport"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -181,37 +198,20 @@ export default function EventsTimeline() {
         onMouseLeave={handleMouseUp}
       >
         <div
+          ref={canvasContentRef}
           className="canvas-content"
           style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             width: '3800px',
-            height: '1400px'
+            height: '1400px',
+            transform: `translate(${currentPan.current.x}px, ${currentPan.current.y}px) scale(${zoom})`
           }}
         >
-          {/* SVG Map Lines */}
-          <svg ref={svgRef} className="svg-layer">
+          {/* SVG Map Lines (Clean, no tangles) */}
+          <svg className="svg-layer">
             {generatePaths().map((d, i) => (
-              <path key={i} d={d} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
+              <path key={i} d={d} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
             ))}
           </svg>
-
-          {/* Background Thumbnails (scattered) */}
-          {TIMELINE_EVENTS.map((p, i) => {
-            const img = wikiData[p.id]?.src;
-            if (!img) return null;
-            return (
-              <div
-                key={`bg-${p.id}`}
-                className="background-thumbnail"
-                style={{
-                  left: (p.x + 300 + i * 73) % 1200,
-                  top: (p.y + 200 + i * 97) % 850,
-                }}
-              >
-                <img src={img} alt="" />
-              </div>
-            );
-          })}
 
           {/* Real Project/Event Cards */}
           {TIMELINE_EVENTS.map((p) => {
@@ -230,6 +230,7 @@ export default function EventsTimeline() {
                  style={{ left: p.x, top: p.y }}
                  onClick={() => setSelectedProject(p.id)}
                >
+                 {/* Beautiful Glass UI slide switching */}
                  <div className={`project-card ${isSelected ? 'expanded' : 'collapsed'}`}>
                    <div className="card-header">
                      <span className="card-id">{p.id}</span>
@@ -244,35 +245,37 @@ export default function EventsTimeline() {
                      />
                    </div>
 
-                   {isSelected && (
-                     <div className="card-details">
-                       <div className="detail-row">
-                         <span className="detail-label">Event:</span>
-                         <span className="detail-value">{data?.title || p.query}</span>
-                       </div>
-                       <div className="detail-row" style={{ marginTop: '4px' }}>
-                         <span className="detail-label">Region:</span>
-                         <span className="detail-value">{p.region}</span>
-                       </div>
-                       <div className="detail-row" style={{ marginTop: '4px' }}>
-                         <span className="detail-label">Focus:</span>
-                         <span className="detail-value">{p.detail}</span>
-                       </div>
-                       
-                       <div className="card-extract">
-                         {data?.extract || 'Loading summary from Wikipedia...'}
-                       </div>
+                   <div className={`card-details-wrapper ${isSelected ? 'visible' : 'hidden'}`}>
+                     {isSelected && (
+                       <div className="card-details">
+                         <div className="detail-row">
+                           <span className="detail-label">Event:</span>
+                           <span className="detail-value">{data?.title || p.query}</span>
+                         </div>
+                         <div className="detail-row" style={{ marginTop: '4px' }}>
+                           <span className="detail-label">Region:</span>
+                           <span className="detail-value">{p.region}</span>
+                         </div>
+                         <div className="detail-row" style={{ marginTop: '4px' }}>
+                           <span className="detail-label">Focus:</span>
+                           <span className="detail-value">{p.detail}</span>
+                         </div>
+                         
+                         <div className="card-extract">
+                           {data?.extract || 'Loading summary from Wikipedia...'}
+                         </div>
 
-                       {data?.url && (
-                         <a 
-                           href={data.url} target="_blank" rel="noreferrer"
-                           className="card-link"
-                         >
-                           Read more on Wikipedia ↗
-                         </a>
-                       )}
-                     </div>
-                   )}
+                         {data?.url && (
+                           <a 
+                             href={data.url} target="_blank" rel="noreferrer"
+                             className="card-link"
+                           >
+                             Read more on Wikipedia ↗
+                           </a>
+                         )}
+                       </div>
+                     )}
+                   </div>
                  </div>
                </div>
              );

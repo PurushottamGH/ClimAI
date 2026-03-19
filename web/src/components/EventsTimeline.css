@@ -200,29 +200,33 @@
 }
 
 .project-card {
-    border-radius: 4px;
+    border-radius: 6px;
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
     display: flex;
     flex-direction: column;
 }
 
 .project-card.collapsed {
-    background-color: rgba(30, 30, 30, 0.8);
-    border: 1px solid #333;
+    background-color: rgba(22, 22, 24, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     width: 120px;
 }
 
 .project-card.collapsed:hover {
-    background-color: rgba(42, 42, 42, 0.9);
-    border-color: #444;
+    background-color: rgba(35, 35, 40, 0.55);
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .project-card.expanded {
-    background-color: rgba(42, 42, 42, 0.95);
-    border: 1px solid #555;
+    background-color: rgba(18, 18, 20, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     width: 250px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 255, 255, 0.05);
     margin-top: -30px; /* offset visual pop */
     margin-left: -65px;
 }
@@ -274,6 +278,12 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    animation: fadeSlideIn 0.4s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .detail-row {
@@ -406,5 +416,7 @@
 }
 
 .bottom-filter-link.active {
-    color: #38bdf8;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
 }
