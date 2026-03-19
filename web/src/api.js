@@ -12,7 +12,7 @@ export const api = {
     getEarthquakes: (minMag = 4.5, days = 30) =>
         axios.get(`${API_BASE}/earthquakes?min_magnitude=${minMag}&days=${days}`).then(r => r.data),
     getCyclones: () => axios.get(`${API_BASE}/cyclones`).then(r => r.data),
-    getTsunamis: () => axios.get(`${API_BASE}/tsunamis`).then(r => r.data),
+    getTsunamis: () => axios.get(`${API_BASE}/tsunamis?_t=${Date.now()}`).then(r => r.data),
     getTemperatureMap: () => axios.get(`${API_BASE}/temperature-map`).then(r => r.data),
     getAQI: () => axios.get(`${API_BASE}/aqi`).then(r => r.data),
     getFloodRisk: () => axios.get(`${API_BASE}/flood-risk`).then(r => r.data),
