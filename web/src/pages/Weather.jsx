@@ -7,14 +7,13 @@ import {
 
 const TT = { backgroundColor: '#111', border: '1px solid #1e1e1e', borderRadius: '6px', color: '#e5e5e5', fontSize: '11px', padding: '6px 10px' };
 
-export default function Weather() {
+export default function Weather({ activeTab = 'Overview' }) {
     const [weather,  setWeather]  = useState(null);
     const [forecast, setForecast] = useState(null);
     const [aqi,      setAqi]      = useState(null);
     const [flood,    setFlood]    = useState(null);
     const [seasonal, setSeasonal] = useState(null);
     const [loading,  setLoading]  = useState(true);
-    const [activeTab, setActiveTab] = useState('Overview');
 
     useEffect(() => {
         Promise.all([
@@ -40,7 +39,7 @@ export default function Weather() {
     const daily = forecast?.daily || [];
     const hourly = (forecast?.hourly || []).filter((_, i) => i % 3 === 0).slice(0, 24);
 
-    const tabs = ['Overview', 'Temperature', 'Air Quality', 'Flood Risk', 'Wind', 'Seasonal'];
+
 
     // Helpers for Radial Gauges
     const aqiLevel = Math.min(aqi ? aqi.aqi : 0, 500);
@@ -51,21 +50,10 @@ export default function Weather() {
 
     return (
         <div className="space-y-4">
-            {/* ── HEADER & TABS ── */}
+            {/* ── HEADER ── */}
             <div>
                 <h2 className="text-[15px] font-semibold gradient-text">ClimAI Weather Hub</h2>
-                <p className="text-[10px] mt-0.5 mb-3" style={{ color: '#555' }}>Live telemetry • Chennai, India</p>
-                
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                    {tabs.map(tab => (
-                        <button 
-                            key={tab} 
-                            onClick={() => setActiveTab(tab)}
-                            className={`px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors ${activeTab === tab ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-[#1a1a2e] text-[#888] border border-transparent hover:text-[#ccc]'}`}>
-                            {tab}
-                        </button>
-                    ))}
-                </div>
+                <p className="text-[10px] mt-0.5" style={{ color: '#555' }}>Live telemetry • Chennai, India</p>
             </div>
 
             {/* ── DYNAMIC VIEWS ── */}

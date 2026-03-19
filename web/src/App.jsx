@@ -23,6 +23,7 @@ export default function App() {
   const [tempData, setTempData] = useState([]);
   const [tempMapData, setTempMapData] = useState([]);
   const [selectedCyclone, setSelectedCyclone] = useState('All');
+  const [weatherTab, setWeatherTab] = useState('Overview');
 
   useEffect(() => {
     api.getEarthquakes()
@@ -84,12 +85,28 @@ export default function App() {
                 </svg>
               </div>
             )}
+            {category === 'weather' && (
+              <div className="cyclone-select-wrapper" style={{ position: 'relative' }}>
+                <select
+                  value={weatherTab}
+                  onChange={(e) => setWeatherTab(e.target.value)}
+                  className="cyclone-select"
+                >
+                  {['Overview', 'Temperature', 'Air Quality', 'Flood Risk', 'Wind', 'Seasonal'].map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <svg className="cyclone-select-icon" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
+            )}
           </div>
           <div className={`panel-bottom ${category === 'earthquake' ? 'eq-dashboard-active' : ''} ${category === 'weather' ? 'weather-active' : ''}`}>
             {category === 'earthquake' && <EarthquakeCharts data={quakeData} />}
             {category === 'cyclone' && <CycloneCharts data={cycloneData} />}
             {category === 'tsunami' && <TsunamiCharts data={tsunamiData} />}
-            {category === 'weather' && <Weather />}
+            {category === 'weather' && <Weather activeTab={weatherTab} />}
             {category === 'temperature' && <TemperatureCharts data={tempData} />}
           </div>
         </div>
