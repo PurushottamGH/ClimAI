@@ -85,7 +85,8 @@ export default function EventsTimeline() {
 
   const applyTransform = useCallback(() => {
     if (canvasContentRef.current) {
-      canvasContentRef.current.style.transform = `translate(${currentPan.current.x}px, ${currentPan.current.y}px) scale(${zoom})`;
+      // Use translate3d to force hardware (GPU) acceleration for smooth panning
+      canvasContentRef.current.style.transform = `translate3d(${currentPan.current.x}px, ${currentPan.current.y}px, 0) scale(${zoom})`;
     }
   }, [zoom]);
 
@@ -203,7 +204,7 @@ export default function EventsTimeline() {
           style={{
             width: '3800px',
             height: '1400px',
-            transform: `translate(${currentPan.current.x}px, ${currentPan.current.y}px) scale(${zoom})`
+            transform: `translate3d(${currentPan.current.x}px, ${currentPan.current.y}px, 0) scale(${zoom})`
           }}
         >
           {/* SVG Map Lines (Clean, no tangles) */}

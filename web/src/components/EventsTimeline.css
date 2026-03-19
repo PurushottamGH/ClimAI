@@ -157,19 +157,21 @@
 
 .canvas-content {
     position: absolute;
-    width: 1400px;
-    height: 1000px;
+    width: 3800px;
+    height: 1400px;
     top: 0;
     left: 0;
     transform-origin: 0 0;
+    will-change: transform;
+    backface-visibility: hidden;
 }
 
 .svg-layer {
     position: absolute;
     top: 0;
     left: 0;
-    width: 1400px;
-    height: 1000px;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
     z-index: 0;
 }
