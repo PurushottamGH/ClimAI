@@ -1,130 +1,7 @@
 import { useState, useEffect } from 'react';
 import './WikiCard.css';
 
-// ── Generate rich event context from raw event data ──
-function buildEventContext(event) {
-    if (!event) return null;
-
-    if (event.type === 'earthquake') {
-        const mag = event.magnitude || 0;
-        const place = event.place || 'Unknown location';
-        const time = event.time ? new Date(event.time) : null;
-        const dateStr = time ? time.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '';
-
-        let severity = 'Minor';
-        let impact = 'Little to no damage expected.';
-        let cause = 'Movement along tectonic plate boundaries caused stress release in the crust.';
-        let deaths = 'No casualties reported.';
-
-        if (mag >= 7.5) {
-            severity = 'Major';
-            impact = 'Severe damage to buildings and infrastructure. Potential for widespread destruction across large areas.';
-            deaths = 'Significant casualties likely. Emergency response activated.';
-        } else if (mag >= 7.0) {
-            severity = 'Strong';
-            impact = 'Heavy damage in populated areas. Buildings may collapse, especially older structures.';
-            deaths = 'Casualties possible depending on population density.';
-        } else if (mag >= 6.0) {
-            severity = 'Moderate-Strong';
-            impact = 'Damage to poorly constructed buildings. Felt strongly across wide area.';
-            deaths = 'Minor casualties possible in densely populated regions.';
-        } else if (mag >= 5.0) {
-            severity = 'Moderate';
-            impact = 'Minor damage to buildings. Widely felt by population.';
-        } else if (mag >= 4.5) {
-            severity = 'Light';
-            impact = 'Felt by many people. Rarely causes significant damage.';
-        }
-
-        if (mag >= 6.5) {
-            cause = 'A major fault rupture caused sudden displacement of tectonic plates, releasing enormous seismic energy that propagated through the crust as destructive P and S waves.';
-        } else if (mag >= 5.5) {
-            cause = 'Stress accumulated along a fault line was suddenly released, causing the ground to shake. The hypocenter (focus) was located several kilometers below the surface.';
-        }
-
-        // Extract city/region name for image search
-        const placeForImage = place.split(',').pop()?.trim() || place.split(' of ').pop()?.trim() || place;
-
-        return {
-            title: `M${mag.toFixed(1)} Earthquake — ${place}`,
-            date: dateStr,
-            severity,
-            type: 'earthquake',
-            imageQuery: `${placeForImage} earthquake damage`,
-            facts: [
-                { label: 'Magnitude', value: `M${mag.toFixed(1)} (Richter Scale)` },
-                { label: 'Location', value: place },
-                { label: 'Date', value: dateStr || 'Recent' },
-                { label: 'Severity', value: severity },
-            ],
-            what_happened: `A magnitude ${mag.toFixed(1)} earthquake struck ${place}. ${impact}`,
-            why_it_happened: cause,
-            impact: `${impact} ${deaths}`,
-        };
-    }
-
-    if (event.type === 'cyclone') {
-        const name = event.name || 'Unknown Cyclone';
-        const cat = event.category || 'Cyclonic Storm';
-        const wind = event.max_wind_kmh;
-        const rain = event.rainfall_mm;
-        const damage = event.damage_crore;
-        const year = event.year;
-
-        return {
-            title: `${name} (${year})`,
-            date: event.dates || `${year}`,
-            severity: cat,
-            type: 'cyclone',
-            imageQuery: `Cyclone ${name} ${year}`,
-            facts: [
-                { label: 'Name', value: name },
-                { label: 'Category', value: cat },
-                { label: 'Max Wind', value: wind ? `${wind} km/h` : '—' },
-                { label: 'Rainfall', value: rain ? `${rain} mm` : '—' },
-                { label: 'Damage', value: damage ? `₹${damage} crores` : '—' },
-                { label: 'Year', value: `${year}` },
-            ],
-            what_happened: `Cyclone ${name} was a ${cat} that formed in the Bay of Bengal and impacted the Tamil Nadu and Chennai coastline. Maximum sustained winds reached ${wind || '—'} km/h with heavy rainfall of ${rain || '—'} mm recorded.`,
-            why_it_happened: 'Tropical cyclones form over warm ocean waters (above 26°C) in the Bay of Bengal during pre-monsoon and post-monsoon seasons. Warm sea surface temperatures provide the energy that fuels the storm system as it intensifies.',
-            impact: `The cyclone caused significant disruption to Chennai and surrounding districts. ${damage ? `Estimated damage: ₹${damage} crores.` : ''} Heavy rainfall led to flooding in low-lying areas of the city.`,
-        };
-    }
-
-    if (event.type === 'tsunami') {
-        const name = event.name || 'Tsunami Event';
-        const wave = event.wave_height_m;
-        const mag = event.magnitude;
-        const fatalities = event.fatalities;
-        const year = event.year || (event.date ? event.date.split('-')[0] : 'Unknown');
-        const location = event.origin || event.location || 'Indian Ocean';
-
-        const cleanName = name.toLowerCase().includes('tsunami') ? name : `${name} Tsunami`;
-
-        return {
-            title: `${cleanName} (${year})`,
-            date: event.date || `${year}`,
-            severity: wave >= 10 ? 'Catastrophic' : wave >= 5 ? 'Severe' : 'Moderate',
-            type: 'tsunami',
-            imageQuery: `${cleanName} ${year}`,
-            facts: [
-                { label: 'Event', value: name },
-                { label: 'Location', value: location },
-                { label: 'Wave Height', value: wave ? `${wave} m` : '—' },
-                { label: 'Trigger Mag', value: mag ? `M${mag}` : '—' },
-                { label: 'Fatalities', value: fatalities ? fatalities.toLocaleString() : '—' },
-                { label: 'Year', value: `${year}` },
-            ],
-            what_happened: `The ${name} tsunami was triggered by a magnitude ${mag || '—'} undersea earthquake in the ${location} region. Wave heights reached up to ${wave || '—'} meters, causing widespread coastal destruction.`,
-            why_it_happened: 'Tsunamis are caused by sudden large-scale disturbances of the ocean floor, most commonly undersea earthquakes along subduction zones. The displaced water forms long-wavelength waves that travel at speeds up to 800 km/h across ocean basins.',
-            impact: `${fatalities ? `This event claimed ${fatalities.toLocaleString()} lives, making it one of the most devastating tsunami events recorded.` : 'Significant coastal damage and displacement of communities.'} Chennai and Tamil Nadu coastlines are particularly vulnerable due to their low elevation.`,
-        };
-    }
-
-    return null;
-}
-
-// ── Fetch real image and text from Wikipedia for the event ──
+// ── Fetch real image and text from Wikipedia ──
 async function fetchWikiData(query) {
     try {
         const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`;
@@ -139,15 +16,14 @@ async function fetchWikiData(query) {
 
         let hiRes = null;
         if (summaryData?.thumbnail?.source) {
-            // Get higher resolution by replacing thumbnail size
             hiRes = summaryData.originalimage?.source || summaryData.thumbnail.source.replace(/\/\d+px-/, '/600px-');
         }
         
         return {
+            title: summaryData.title,
             src: hiRes,
-            caption: summaryData.title,
-            url: summaryData.content_urls?.desktop?.page,
             extract: summaryData.extract,
+            url: summaryData.content_urls?.desktop?.page,
         };
     } catch {
         return null;
@@ -155,162 +31,101 @@ async function fetchWikiData(query) {
 }
 
 export default function WikiCard({ event, onClose }) {
-    const [data, setData] = useState(null);
-    const [imageInfo, setImageInfo] = useState(null);
-    const [imgLoading, setImgLoading] = useState(false);
-    const [imgError, setImgError] = useState(false);
+    const [wikiData, setWikiData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [basicInfo, setBasicInfo] = useState(null);
 
     useEffect(() => {
-        if (!event) { setData(null); setImageInfo(null); return; }
-        setImgError(false);
-        setImgLoading(true);
-        const ctx = buildEventContext(event);
-        setData(ctx);
+        if (!event) return;
+        setIsLoading(true);
 
-        // Fetch real Wikipedia image and Groq LLM Intelligence
-        const fetchIntelligence = async () => {
-            try {
-                // 1. Wikipedia actual data (Image + Text)
-                if (ctx?.imageQuery) {
-                    fetchWikiData(ctx.imageQuery).then(info => {
-                        setImageInfo(info);
-                        if (info && info.extract) {
-                            setData(prev => ({
-                                ...prev,
-                                what_happened: info.extract
-                            }));
-                        }
-                        setImgLoading(false);
-                    });
-                } else {
-                    setImgLoading(false);
-                }
+        // 1. Determine natural language query and generic stats
+        let query = "";
+        let region = "";
+        let detail = "";
 
-                // 2. Groq LLM context
-                const params = new URLSearchParams({ type: event.type });
-                if (ctx.title) params.append('name', ctx.title);
-                if (event.magnitude) params.append('magnitude', event.magnitude);
-                if (event.date) params.append('date', event.date);
-                if (event.year) params.append('date', event.year);
-                
-                const llmData = await api.getEventContext(params.toString());
-                if (llmData && !llmData.error) {
-                    setData(prev => ({
-                        ...prev,
-                        // We let Wikipedia extract drive 'what_happened', only use LLM for the analytical parts
-                        why_it_happened: llmData.reason || prev.why_it_happened,
-                        impact: llmData.impact || prev.impact,
-                    }));
-                }
-            } catch (err) {
-                console.error('Intelligence fetch error', err);
-            }
-        };
-        
-        fetchIntelligence();
+        if (event.type === 'earthquake') {
+            const place = event.place || 'Unknown';
+            const placeQuery = place.split(',').pop()?.trim() || place.split(' of ').pop()?.trim() || place;
+            query = `${placeQuery} earthquake`;
+            region = place;
+            detail = `Magnitude ${event.magnitude} Seismic Event`;
+        } else if (event.type === 'cyclone') {
+            query = `Cyclone ${event.name} ${event.year || ''}`.trim();
+            region = "Oceanic Basin";
+            detail = `Category ${event.category || 'Storm'}`;
+        } else if (event.type === 'tsunami') {
+            query = event.name.toLowerCase().includes('tsunami') ? event.name : `${event.name} Tsunami`;
+            region = event.origin || event.location || "Oceanic Region";
+            detail = `Wave Height: ${event.wave_height_m || '?'}m`;
+        }
+
+        setBasicInfo({ type: event.type, region, detail, query });
+
+        // 2. Fetch authentic Wikipedia Data
+        fetchWikiData(query).then(data => {
+            setWikiData(data);
+            setIsLoading(false);
+        });
+
     }, [event]);
 
     if (!event) return null;
 
-    const TYPE_COLORS = {
-        earthquake: '#f97316',
-        cyclone: '#3b82f6',
-        tsunami: '#06b6d4',
-    };
-    const color = TYPE_COLORS[event.type] || '#ffffff';
-
     return (
         <div className="wiki-card-overlay" onClick={onClose}>
-            <div className="wiki-card" onClick={e => e.stopPropagation()}>
-                <button className="wiki-close" onClick={onClose} aria-label="Close">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M18 6L6 18M6 6l12 12" />
-                    </svg>
-                </button>
+            <div className="wiki-glass-card" onClick={e => e.stopPropagation()}>
+                {/* Header matching EventsTimeline */}
+                <div className="glass-card-header">
+                    <span className="glass-card-id">{basicInfo?.type?.toUpperCase()}</span>
+                    <button className="glass-card-close" onClick={onClose} aria-label="Close" />
+                </div>
 
-                {!data ? (
-                    <div className="wiki-loading">
-                        <div className="wiki-spinner" style={{ borderTopColor: color }} />
-                        <span>Loading event data...</span>
+                {/* Hero Image matching EventsTimeline */}
+                <div className="glass-card-image-container">
+                    {isLoading ? (
+                        <div className="glass-image-placeholder">
+                            <div className="glass-spinner" />
+                        </div>
+                    ) : (
+                        <img 
+                            src={wikiData?.src || 'data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=='} 
+                            alt={wikiData?.title || basicInfo?.query} 
+                            className="glass-card-image" 
+                        />
+                    )}
+                </div>
+
+                {/* Details matching EventsTimeline */}
+                <div className="glass-card-details">
+                    <div className="glass-detail-row">
+                        <span className="glass-detail-label">Event:</span>
+                        <span className="glass-detail-value">
+                            {isLoading ? 'Searching Wikipedia...' : (wikiData?.title || basicInfo?.query)}
+                        </span>
                     </div>
-                ) : (
-                    <div className="wiki-content">
-                        {/* ── TYPE BADGE ── */}
-                        <div className="wiki-type-badge" style={{ color, borderColor: `${color}33`, background: `${color}11` }}>
-                            {event.type.toUpperCase()}
-                        </div>
-
-                        {/* ── TITLE + DATE ── */}
-                        <h2 className="wiki-title">{data.title}</h2>
-                        {data.date && <div className="wiki-date">{data.date}</div>}
-
-                        {/* ── TWO COLUMN: Facts + Sections left, Image right ── */}
-                        <div className="wiki-body-row">
-                            <div className="wiki-body-left">
-                                {/* ── FACTS GRID ── */}
-                                <div className="wiki-facts">
-                                    {data.facts.map((f, i) => (
-                                        <div key={i} className="wiki-fact">
-                                            <div className="wiki-fact-label">{f.label}</div>
-                                            <div className="wiki-fact-value" style={{ color }}>{f.value}</div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* ── WHAT HAPPENED ── */}
-                                <div className="wiki-section">
-                                    <div className="wiki-section-title">WHAT HAPPENED</div>
-                                    <p className="wiki-section-body">{data.what_happened}</p>
-                                </div>
-
-                                {/* ── WHY IT HAPPENED ── */}
-                                <div className="wiki-section">
-                                    <div className="wiki-section-title">WHY IT HAPPENED</div>
-                                    <p className="wiki-section-body">{data.why_it_happened}</p>
-                                </div>
-                            </div>
-
-                            {/* ── RIGHT: Image ── */}
-                            <div className="wiki-body-right">
-                                <div className="wiki-image-wrap">
-                                    {imgLoading ? (
-                                        <div className="wiki-image-loading">
-                                            <div className="wiki-spinner" style={{ borderTopColor: color }} />
-                                        </div>
-                                    ) : imageInfo && !imgError ? (
-                                        <>
-                                            <img
-                                                src={imageInfo.src}
-                                                alt={data.title}
-                                                className="wiki-image"
-                                                onError={() => setImgError(true)}
-                                            />
-                                            <div className="wiki-image-caption">
-                                                {imageInfo.caption} · Wikipedia
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="wiki-image-fallback">
-                                            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>Image unavailable</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* ── SEVERITY INDICATOR ── */}
-                                <div className="wiki-severity" style={{ borderColor: `${color}44` }}>
-                                    <span className="wiki-severity-label">SEVERITY</span>
-                                    <span className="wiki-severity-value" style={{ color }}>{data.severity}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* ── IMPACT (full width below) ── */}
-                        <div className="wiki-section">
-                            <div className="wiki-section-title" style={{ color: '#f87171' }}>IMPACT & DAMAGE</div>
-                            <p className="wiki-section-body">{data.impact}</p>
-                        </div>
+                    <div className="glass-detail-row" style={{ marginTop: '4px' }}>
+                        <span className="glass-detail-label">Region:</span>
+                        <span className="glass-detail-value">{basicInfo?.region}</span>
                     </div>
-                )}
+                    <div className="glass-detail-row" style={{ marginTop: '4px' }}>
+                        <span className="glass-detail-label">Metrics:</span>
+                        <span className="glass-detail-value">{basicInfo?.detail}</span>
+                    </div>
+                    
+                    <div className="glass-card-extract">
+                        {isLoading ? 'Extracting verified architectural data...' : (wikiData?.extract || 'No exact Wikipedia summary found. Real-time data mapped from event grid.')}
+                    </div>
+
+                    {wikiData?.url && (
+                        <a 
+                            href={wikiData.url} target="_blank" rel="noreferrer"
+                            className="glass-card-link"
+                        >
+                            Read more on Wikipedia ↗
+                        </a>
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -1,6 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
-
-/* ── Overlay — inside the map, no blur ── */
+/* ── Overlay ── */
 .wiki-card-overlay {
     position: absolute;
     inset: 0;
@@ -9,352 +7,159 @@
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.4);
-    animation: wikiFadeIn 0.15s ease;
+    animation: overlayFadeIn 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    pointer-events: auto;
 }
 
-/* ── Card — wider landscape rectangle ── */
-.wiki-card {
-    position: relative;
-    width: 680px;
-    max-width: 94vw;
-    max-height: 80vh;
-    background: #0a0c10;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    animation: wikiSlideIn 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-    font-family: 'Syne', sans-serif;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+@keyframes overlayFadeIn {
+    from { opacity: 0; backdrop-filter: blur(0px); }
+    to { opacity: 1; backdrop-filter: blur(4px); }
 }
 
-.wiki-card::-webkit-scrollbar {
-    width: 3px;
-}
-
-.wiki-card::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-/* ── Close button ── */
-.wiki-close {
-    position: sticky;
-    top: 10px;
-    float: right;
-    margin: 10px 10px 0 0;
-    z-index: 10;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.5);
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-}
-
-.wiki-close:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-}
-
-/* ── Loading ── */
-.wiki-loading {
+/* ── Glass Card matching EventsTimeline .project-card.expanded ── */
+.wiki-glass-card {
+    background-color: rgba(18, 18, 20, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    width: 340px;
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 255, 255, 0.05);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 60px 20px;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.3);
-    font-family: 'DM Mono', monospace;
-}
-
-.wiki-spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid rgba(255, 255, 255, 0.08);
-    border-top-color: #f97316;
-    border-radius: 50%;
-    animation: wikiSpin 0.8s linear infinite;
-}
-
-/* ── Content — two-column layout for wider card ── */
-.wiki-content {
-    padding: 16px 22px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    clear: both;
-    margin-top: -28px;
-}
-
-/* ── Two-column body row: text left, image right ── */
-.wiki-body-row {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-}
-
-.wiki-body-left {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.wiki-body-right {
-    width: 220px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* Type badge */
-.wiki-type-badge {
-    align-self: flex-start;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    padding: 4px 10px;
-    border: 1px solid;
-    border-radius: 4px;
-    font-family: 'DM Mono', monospace;
-}
-
-/* Title */
-.wiki-title {
-    font-size: 18px;
-    font-weight: 800;
-    color: #ffffff;
-    line-height: 1.2;
-    letter-spacing: -0.3px;
-    margin: 0;
-}
-
-/* Date */
-.wiki-date {
-    font-size: 10px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.3);
-    letter-spacing: 1.5px;
-    font-family: 'DM Mono', monospace;
-    text-transform: uppercase;
-}
-
-/* Facts grid */
-.wiki-facts {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 6px;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     overflow: hidden;
+    animation: cardSlideUp 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    transform: translate3d(0, 0, 0);
 }
 
-.wiki-fact {
-    padding: 8px 12px;
-    background: #0a0c10;
+@keyframes cardSlideUp {
+    from { opacity: 0; transform: translate3d(0, 20px, 0) scale(0.95); }
+    to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 
-.wiki-fact-label {
-    font-size: 9px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.25);
-    letter-spacing: 1.5px;
-    margin-bottom: 3px;
-    font-family: 'DM Mono', monospace;
-    text-transform: uppercase;
-}
-
-.wiki-fact-value {
-    font-size: 13px;
-    font-weight: 700;
-    font-family: 'Syne', sans-serif;
-}
-
-/* Sections */
-.wiki-section {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.wiki-section-title {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: rgba(255, 255, 255, 0.3);
-    font-family: 'DM Mono', monospace;
-    text-transform: uppercase;
-}
-
-.wiki-section-body {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
-    line-height: 1.65;
-    text-transform: none;
-    letter-spacing: 0;
-    font-family: 'DM Mono', monospace;
-    font-weight: 300;
-    margin: 0;
-}
-
-/* Image */
-.wiki-image-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.wiki-image {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    display: block;
-    border-radius: 8px;
-    filter: brightness(0.9);
-}
-
-.wiki-image-loading {
-    width: 100%;
-    height: 200px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-}
-
-.wiki-image-loading .wiki-spinner {
-    width: 16px;
-    height: 16px;
-}
-
-.wiki-image-fallback {
-    width: 100%;
-    height: 200px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.wiki-image-caption {
-    font-size: 9px;
-    color: rgba(255, 255, 255, 0.15);
-    font-family: 'DM Mono', monospace;
-    letter-spacing: 0.5px;
-}
-
-/* Severity */
-.wiki-severity {
+/* Header */
+.glass-card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 14px;
-    border: 1px solid;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.02);
+    padding: 10px 12px 6px;
 }
 
-.wiki-severity-label {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: rgba(255, 255, 255, 0.25);
-    font-family: 'DM Mono', monospace;
-}
-
-.wiki-severity-value {
-    font-size: 14px;
-    font-weight: 800;
-    font-family: 'Syne', sans-serif;
+.glass-card-id {
+    font-size: 11px;
+    color: #bbb;
     letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-weight: 600;
 }
 
-/* Error */
-.wiki-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding: 40px 20px;
-    text-align: center;
-}
-
-.wiki-error-icon {
-    width: 40px;
-    height: 40px;
+.glass-card-close {
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #f87171;
-    font-size: 20px;
-    font-weight: 700;
+    background-color: #555;
+    border: 1px solid #777;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.2s;
+}
+
+.glass-card-close:hover {
+    background-color: #ef4444;
+    border-color: #dc2626;
+}
+
+/* Image */
+.glass-card-image-container {
+    padding: 0 12px 12px;
+}
+
+.glass-card-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #111;
+}
+
+.glass-image-placeholder {
+    width: 100%;
+    height: 180px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.wiki-retry-btn {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 8px 20px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: 'DM Mono', monospace;
-    transition: background 0.2s;
+.glass-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top-color: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
-.wiki-retry-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
-
-/* ── Animations ── */
-@keyframes wikiFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes wikiSlideIn {
-    from {
-        opacity: 0;
-        transform: scale(0.96) translateY(8px);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-@keyframes wikiSpin {
+@keyframes spin {
     to { transform: rotate(360deg); }
 }
 
-/* ── Responsive: stack on small screens ── */
-@media (max-width: 700px) {
-    .wiki-card {
-        width: 95vw;
-    }
-    .wiki-body-row {
-        flex-direction: column;
-    }
-    .wiki-body-right {
-        width: 100%;
-    }
+/* Details */
+.glass-card-details {
+    padding: 0 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.glass-detail-row {
+    display: flex;
+    flex-direction: column;
+}
+
+.glass-detail-label {
+    color: #999;
+    font-size: 10px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+    font-weight: 500;
+}
+
+.glass-detail-value {
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.3;
+}
+
+.glass-card-extract {
+    color: #ccc;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-top: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.glass-card-link {
+    margin-top: 12px;
+    color: #aaa;
+    font-size: 11px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    text-align: left;
+    font-weight: 500;
+}
+
+.glass-card-link:hover {
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
