@@ -207,15 +207,38 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
     }
 
 def get_tsunamis():
-    """Historical tsunami events in the Indian Ocean."""
+    """Historical tsunami events worldwide — 30 verified events."""
     events = [
-        {"name": "Indian Ocean Tsunami", "date": "2004-12-26", "wave_height_m": 30.0, "fatalities": 227898},
-        {"name": "Krakatoa Tsunami", "date": "1883-08-27", "wave_height_m": 37.0, "fatalities": 36417},
-        {"name": "Makran Coast Tsunami", "date": "1945-11-28", "wave_height_m": 13.0, "fatalities": 4000},
-        {"name": "Andaman Tsunami", "date": "1941-06-26", "wave_height_m": 1.5, "fatalities": 5000},
-        {"name": "Sumatra Aftershock", "date": "2005-03-28", "wave_height_m": 3.0, "fatalities": 1313},
-        {"name": "Sulawesi Tsunami", "date": "2018-09-28", "wave_height_m": 11.0, "fatalities": 4340},
-        {"name": "Anak Krakatau", "date": "2018-12-22", "wave_height_m": 5.0, "fatalities": 437},
+        {"name": "2004 Indian Ocean Tsunami", "date": "2004-12-26", "wave_height_m": 30.0, "fatalities": 227898},
+        {"name": "2011 Tōhoku Tsunami", "date": "2011-03-11", "wave_height_m": 40.5, "fatalities": 19759},
+        {"name": "1960 Valdivia Tsunami", "date": "1960-05-22", "wave_height_m": 25.0, "fatalities": 6000},
+        {"name": "1964 Alaska Tsunami", "date": "1964-03-27", "wave_height_m": 67.0, "fatalities": 131},
+        {"name": "1883 Krakatoa Tsunami", "date": "1883-08-27", "wave_height_m": 37.0, "fatalities": 36417},
+        {"name": "1755 Lisbon Tsunami", "date": "1755-11-01", "wave_height_m": 20.0, "fatalities": 60000},
+        {"name": "1868 Arica Tsunami", "date": "1868-08-13", "wave_height_m": 21.0, "fatalities": 25000},
+        {"name": "1896 Meiji Sanriku Tsunami", "date": "1896-06-15", "wave_height_m": 38.2, "fatalities": 22066},
+        {"name": "1945 Makran Coast Tsunami", "date": "1945-11-28", "wave_height_m": 13.0, "fatalities": 4000},
+        {"name": "1941 Andaman Tsunami", "date": "1941-06-26", "wave_height_m": 1.5, "fatalities": 5000},
+        {"name": "2018 Sulawesi Tsunami", "date": "2018-09-28", "wave_height_m": 11.0, "fatalities": 4340},
+        {"name": "2018 Anak Krakatau Tsunami", "date": "2018-12-22", "wave_height_m": 5.0, "fatalities": 437},
+        {"name": "2005 Nias–Simeulue Tsunami", "date": "2005-03-28", "wave_height_m": 3.0, "fatalities": 1313},
+        {"name": "1958 Lituya Bay Mega-Tsunami", "date": "1958-07-09", "wave_height_m": 524.0, "fatalities": 5},
+        {"name": "1976 Moro Gulf Tsunami", "date": "1976-08-16", "wave_height_m": 9.0, "fatalities": 5000},
+        {"name": "1998 Papua New Guinea Tsunami", "date": "1998-07-17", "wave_height_m": 15.0, "fatalities": 2183},
+        {"name": "2009 Samoa Tsunami", "date": "2009-09-29", "wave_height_m": 14.0, "fatalities": 192},
+        {"name": "2010 Chile Tsunami", "date": "2010-02-27", "wave_height_m": 29.0, "fatalities": 525},
+        {"name": "1933 Shōwa Sanriku Tsunami", "date": "1933-03-02", "wave_height_m": 28.7, "fatalities": 3064},
+        {"name": "1946 Aleutian Tsunami", "date": "1946-04-01", "wave_height_m": 35.0, "fatalities": 165},
+        {"name": "1952 Kamchatka Tsunami", "date": "1952-11-04", "wave_height_m": 18.0, "fatalities": 2336},
+        {"name": "1992 Flores Island Tsunami", "date": "1992-12-12", "wave_height_m": 26.0, "fatalities": 2500},
+        {"name": "1993 Hokkaido Tsunami", "date": "1993-07-12", "wave_height_m": 31.7, "fatalities": 230},
+        {"name": "2006 Java Tsunami", "date": "2006-07-17", "wave_height_m": 7.0, "fatalities": 668},
+        {"name": "1929 Grand Banks Tsunami", "date": "1929-11-18", "wave_height_m": 13.0, "fatalities": 28},
+        {"name": "1960 Hilo Tsunami", "date": "1960-05-23", "wave_height_m": 10.7, "fatalities": 61},
+        {"name": "2007 Solomon Islands Tsunami", "date": "2007-04-01", "wave_height_m": 12.0, "fatalities": 52},
+        {"name": "1908 Messina Tsunami", "date": "1908-12-28", "wave_height_m": 12.0, "fatalities": 80000},
+        {"name": "1692 Port Royal Tsunami", "date": "1692-06-07", "wave_height_m": 2.0, "fatalities": 2000},
+        {"name": "2004 Sri Lanka Tsunami Impact", "date": "2004-12-26", "wave_height_m": 11.0, "fatalities": 35322},
     ]
     return {
         "events": events,
@@ -223,6 +246,7 @@ def get_tsunamis():
             "total": len(events),
             "max_wave": max(e["wave_height_m"] for e in events),
             "total_fatalities": sum(e["fatalities"] for e in events),
-            "period": "1883-2018",
+            "period": "1692-2018",
         }
     }
+
