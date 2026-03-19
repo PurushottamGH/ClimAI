@@ -63,7 +63,23 @@ export default function WikiCard({ event, onClose }) {
         setBasicInfo({ type: event.type, region, detail, query });
 
         // 2. Fetch authentic Wikipedia Data
-        fetchWikiData(query).then(data => {
+        fetchWikiData(query).then(async data => {
+            // 3. Fallback Image Handler (If article has no image, fetch a generic high-quality one)
+            if (data && !data.src) {
+                const fallbackCategoryMap = {
+                    'earthquake': 'Earthquake',
+                    'cyclone': 'Tropical cyclone',
+                    'tsunami': 'Tsunami',
+                    'wildfire': 'Wildfire',
+                    'flood': 'Flood',
+                    'heatwave': 'Heat wave'
+                };
+                const fallbackQuery = fallbackCategoryMap[event.type] || 'Natural disaster';
+                const fallbackData = await fetchWikiData(fallbackQuery);
+                if (fallbackData && fallbackData.src) {
+                    data.src = fallbackData.src;
+                }
+            }
             setWikiData(data);
             setIsLoading(false);
         });
