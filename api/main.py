@@ -861,7 +861,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
 
 
 # ════════════════════════════════
-# /tsunamis — Historical Indian Ocean tsunamis
+# /tsunamis — 30 verified historical tsunami events worldwide
 # ════════════════════════════════
 @app.get("/tsunamis")
 def get_tsunamis():
