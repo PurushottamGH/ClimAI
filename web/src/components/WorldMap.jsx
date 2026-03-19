@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Map, { Source, Layer } from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
-import { ScatterplotLayer, PathLayer } from '@deck.gl/layers';
+import { ScatterplotLayer, PathLayer, IconLayer } from '@deck.gl/layers';
 import WikiCard from './WikiCard';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './WorldMap.css';
@@ -74,6 +74,36 @@ export default function WorldMap({
 }) {
   const [hoverInfo, setHoverInfo] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [animTime, setAnimTime] = useState(0);
+
+  // Animation Loop for Cyclones
+  useEffect(() => {
+    let animationId;
+    // We update animTime from 0 to 1 over a few seconds
+    const animate = () => {
+      setAnimTime((t) => (t + 0.002) % 1);
+      animationId = window.requestAnimationFrame(animate);
+    };
+    if (category === 'cyclone') {
+      animate();
+    }
+    return () => window.cancelAnimationFrame(animationId);
+  }, [category]);
+
+  const getInterpolatedPos = (track, timeRatio) => {
+    if (!track || track.length === 0) return [0, 0];
+    if (track.length === 1) return [track[0].lon, track[0].lat];
+    const segment = timeRatio * (track.length - 1);
+    const index = Math.floor(segment);
+    const fraction = segment - index;
+    if (index >= track.length - 1) return [track[track.length - 1].lon, track[track.length - 1].lat];
+    const curr = track[index];
+    const next = track[index + 1];
+    return [
+      curr.lon + (next.lon - curr.lon) * fraction,
+      curr.lat + (next.lat - curr.lat) * fraction
+    ];
+  };
 
   // ═══════════════════════════════
   // LAYER: Earthquakes
@@ -186,28 +216,41 @@ export default function WorldMap({
     visible: category === 'cyclone'
   }), [cycloneImpactData, category]);
 
-  const cycloneEyeLayer = useMemo(() => new ScatterplotLayer({
+  const currentCyclonePos = useMemo(() => {
+    return cyclones.filter(c => c.track?.length > 0).map(c => {
+      const sortedTrack = c.track[0].time ? [...c.track].sort((a, b) => new Date(a.time) - new Date(b.time)) : c.track;
+      return {
+        ...c,
+        trackInfo: sortedTrack,
+        currentPos: getInterpolatedPos(sortedTrack, animTime)
+      };
+    });
+  }, [cyclones, animTime]);
+
+  const cycloneEyeLayer = useMemo(() => new IconLayer({
     id: 'cyclone-eyes',
-    data: cyclones.filter(c => c.track?.length > 0),
+    data: currentCyclonePos,
     pickable: true,
-    opacity: 1,
-    stroked: true,
-    filled: true,
-    radiusMinPixels: 4,
-    radiusMaxPixels: 6,
-    lineWidthMinPixels: 2,
-    getPosition: d => {
-      const sortedTrack = d.track[0].time ? [...d.track].sort((a, b) => new Date(a.time) - new Date(b.time)) : d.track;
-      const latest = sortedTrack[sortedTrack.length - 1];
-      return [latest.lon, latest.lat];
+    getIcon: d => ({
+      url: '/cyclone_icon.svg',
+      width: 100,
+      height: 100,
+      anchorY: 50,
+      anchorX: 50
+    }),
+    sizeScale: 1,
+    getPosition: d => d.currentPos,
+    getSize: d => 40,
+    getAngle: d => (animTime * 360 * 15), // Spin 15 times per cycle
+    getColor: d => getCycloneCatColorArr(d.category),
+    updateTriggers: {
+      getPosition: [animTime],
+      getAngle: [animTime]
     },
-    getRadius: d => 10000,
-    getFillColor: [255, 255, 255, 255],
-    getLineColor: d => getCycloneCatColorArr(d.category),
     onHover: info => setHoverInfo({ ...info, isCycloneEye: true }),
     onClick: info => {
       if (info.object) {
-        const sortedTrack = info.object.track && info.object.track.length > 0 && info.object.track[0].time ? [...info.object.track].sort((a, b) => new Date(a.time) - new Date(b.time)) : info.object.track;
+        const sortedTrack = info.object.trackInfo;
         const latest = sortedTrack && sortedTrack.length > 0 ? sortedTrack[sortedTrack.length - 1] : null;
         setSelectedEvent({
           ...info.object,
@@ -217,7 +260,7 @@ export default function WorldMap({
       }
     },
     visible: category === 'cyclone'
-  }), [cyclones, category]);
+  }), [currentCyclonePos, category, animTime]);
 
   // ═══════════════════════════════
   // LAYER: Tsunamis

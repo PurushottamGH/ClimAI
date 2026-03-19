@@ -140,17 +140,26 @@ export default function WikiCard({ event, onClose }) {
                         </span>
                     </div>
                     <div className="glass-detail-row" style={{ marginTop: '4px' }}>
-                        <span className="glass-detail-label">Region:</span>
-                        <span className="glass-detail-value">{basicInfo?.region}</span>
-                    </div>
-                    <div className="glass-detail-row" style={{ marginTop: '4px' }}>
                         <span className="glass-detail-label">Metrics:</span>
                         <span className="glass-detail-value">{basicInfo?.detail}</span>
                     </div>
+
+                    {event.type === 'cyclone' && event.reason && (
+                        <div className="cyclone-metrics-grid">
+                            <div className="cm-metric"><span className="cm-label">Impact</span><span className="cm-value">{event.impact}</span></div>
+                            <div className="cm-metric"><span className="cm-label">Cost</span><span className="cm-value">{event.cost || '?'}</span></div>
+                            <div className="cm-metric"><span className="cm-label">Deaths</span><span className="cm-value">{event.deaths || '?'}</span></div>
+                            <div className="cm-metric"><span className="cm-label">Rainfall</span><span className="cm-value">{event.rainfall || '?'}</span></div>
+                            <div className="cm-metric full"><span className="cm-label">Flood Risk</span><span className="cm-value">{event.flood_risk || 'N/A'}</span></div>
+                            <div className="cm-metric full"><span className="cm-label">Cause</span><span className="cm-value">{event.reason}</span></div>
+                        </div>
+                    )}
                     
-                    <div className="glass-card-extract">
-                        {isLoading ? 'Extracting verified architectural data...' : (wikiData?.extract || 'No exact Wikipedia summary found. Real-time data mapped from event grid.')}
-                    </div>
+                    {event.type !== 'cyclone' && (
+                        <div className="glass-card-extract">
+                            {isLoading ? 'Extracting verified architectural data...' : (wikiData?.extract || 'No exact Wikipedia summary found. Real-time data mapped from event grid.')}
+                        </div>
+                    )}
 
                     {wikiData?.url && (
                         <a 

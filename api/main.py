@@ -779,7 +779,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
     
     # Base cyclone data (simulating IBTrACS format for tracks)
     cyclones = [
-        {"name": "Cyclone Michaung", "year": 2023, "category": "Severe Cyclonic Storm", "max_wind_kmh": 100, "rainfall_mm": 450, "damage_crore": 8000, "dates": "Dec 1-5, 2023", "landfall": "Near Bapatla, AP", "impact": "Record 240mm rainfall, severe flooding, 17 deaths",
+        {"name": "Cyclone Michaung", "year": 2023, "category": "Severe Cyclonic Storm", "max_wind_kmh": 100, "rainfall_mm": 450, "damage_crore": 8000, "dates": "Dec 1-5, 2023", "landfall": "Near Bapatla, AP", "impact": "Record 240mm rainfall, severe flooding, 17 deaths.", "cost": "$960 Million", "deaths": 17, "reason": "Slow-moving system lingered near the coast, pulling intense oceanic moisture into stationary bands over Chennai.", "rainfall": "450 mm extreme", "flood_risk": "Catastrophic Urban Flooding",
          "track": [
              {"lat":10.5,"lon":83, "wind_speed": 55, "pressure": 1002, "time": "2023-12-01T00:00:00Z"},
              {"lat":11,"lon":82.5, "wind_speed": 75, "pressure": 996, "time": "2023-12-02T00:00:00Z"},
@@ -788,7 +788,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":14,"lon":80.5, "wind_speed": 85, "pressure": 990, "time": "2023-12-05T00:00:00Z"},
              {"lat":15.5,"lon":80.2, "wind_speed": 50, "pressure": 1000, "time": "2023-12-06T00:00:00Z"}
          ]},
-        {"name": "Cyclone Mandous", "year": 2022, "category": "Cyclonic Storm", "max_wind_kmh": 85, "rainfall_mm": 180, "damage_crore": 1500, "dates": "Dec 6-12, 2022", "landfall": "Near Mahabalipuram, TN", "impact": "Heavy rainfall, power outages",
+        {"name": "Cyclone Mandous", "year": 2022, "category": "Cyclonic Storm", "max_wind_kmh": 85, "rainfall_mm": 180, "damage_crore": 1500, "dates": "Dec 6-12, 2022", "landfall": "Near Mahabalipuram, TN", "impact": "Heavy rainfall, power outages.", "cost": "$180 Million", "deaths": 9, "reason": "Shed much of its convection under high shear but retained enough low-level moisture to dump relentless monsoonal rains on Chennai.", "rainfall": "180 mm", "flood_risk": "Medium (Urban)",
          "track": [
              {"lat":9,"lon":85, "wind_speed": 45, "pressure": 1004, "time": "2022-12-06T00:00:00Z"},
              {"lat":10,"lon":84, "wind_speed": 60, "pressure": 998, "time": "2022-12-07T00:00:00Z"},
@@ -796,7 +796,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":12,"lon":81.5, "wind_speed": 85, "pressure": 988, "time": "2022-12-09T00:00:00Z"},
              {"lat":12.5,"lon":80.5, "wind_speed": 65, "pressure": 996, "time": "2022-12-10T00:00:00Z"}
          ]},
-        {"name": "Cyclone Nivar", "year": 2020, "category": "Very Severe", "max_wind_kmh": 130, "rainfall_mm": 350, "damage_crore": 3000, "dates": "Nov 23-27, 2020", "landfall": "Near Puducherry", "impact": "200mm+ rainfall, 12 deaths, airport closed",
+        {"name": "Cyclone Nivar", "year": 2020, "category": "Very Severe", "max_wind_kmh": 130, "rainfall_mm": 350, "damage_crore": 3000, "dates": "Nov 23-27, 2020", "landfall": "Near Puducherry", "impact": "200mm+ rainfall, 12 deaths, airport closed.", "cost": "$600 Million", "deaths": 12, "reason": "Formed rapidly in the Bay of Bengal and drove intense rainbands right into water-logged Tamil Nadu exactly during the northeast monsoon.", "rainfall": "350 mm localized", "flood_risk": "High (Reservoir Overflow)",
          "track": [
              {"lat":8.5,"lon":86, "wind_speed": 60, "pressure": 1000, "time": "2020-11-23T00:00:00Z"},
              {"lat":9.5,"lon":84.5, "wind_speed": 90, "pressure": 992, "time": "2020-11-24T00:00:00Z"},
@@ -804,7 +804,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":11.5,"lon":81.5, "wind_speed": 130, "pressure": 974, "time": "2020-11-26T00:00:00Z"},
              {"lat":12,"lon":80.5, "wind_speed": 95, "pressure": 986, "time": "2020-11-27T00:00:00Z"}
          ]},
-        {"name": "Cyclone Gaja", "year": 2018, "category": "Severe Cyclonic Storm", "max_wind_kmh": 120, "rainfall_mm": 200, "damage_crore": 15000, "dates": "Nov 11-19, 2018", "landfall": "Nagapattinam-Vedaranyam", "impact": "Schools closed, flights disrupted",
+        {"name": "Cyclone Gaja", "year": 2018, "category": "Severe Cyclonic Storm", "max_wind_kmh": 120, "rainfall_mm": 200, "damage_crore": 15000, "dates": "Nov 11-19, 2018", "landfall": "Nagapattinam-Vedaranyam", "impact": "Schools closed, flights disrupted, agricultural devastation.", "cost": "$1.2 Billion", "deaths": 63, "reason": "Compact and highly destructive storm core severely damaged millions of coconut and agricultural trees across the fertile Cauvery Delta.", "rainfall": "200 mm", "flood_risk": "Low (High Wind Damage)",
          "track": [
              {"lat":8,"lon":87, "wind_speed": 55, "pressure": 1002, "time": "2018-11-11T00:00:00Z"},
              {"lat":9,"lon":85.5, "wind_speed": 75, "pressure": 996, "time": "2018-11-13T00:00:00Z"},
@@ -812,7 +812,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":10.5,"lon":82, "wind_speed": 120, "pressure": 978, "time": "2018-11-16T00:00:00Z"},
              {"lat":10.8,"lon":80.5, "wind_speed": 85, "pressure": 992, "time": "2018-11-17T00:00:00Z"}
          ]},
-        {"name": "Cyclone Vardah", "year": 2016, "category": "Very Severe", "max_wind_kmh": 140, "rainfall_mm": 150, "damage_crore": 5000, "dates": "Dec 6-13, 2016", "landfall": "Near Chennai", "impact": "Direct hit, 130km/h winds, 18 deaths, power out 3 days",
+        {"name": "Cyclone Vardah", "year": 2016, "category": "Very Severe", "max_wind_kmh": 140, "rainfall_mm": 150, "damage_crore": 5000, "dates": "Dec 6-13, 2016", "landfall": "Near Chennai", "impact": "Direct hit, 130km/h winds, power out 3 days.", "cost": "$1.4 Billion", "deaths": 18, "reason": "Passed directly over the Chennai metropolitan area, causing massive structural damage to urban infrastructure and uprooting 100,000+ trees.", "rainfall": "150 mm", "flood_risk": "Moderate",
          "track": [
              {"lat":8,"lon":89, "wind_speed": 65, "pressure": 1000, "time": "2016-12-07T00:00:00Z"},
              {"lat":9.5,"lon":87, "wind_speed": 90, "pressure": 990, "time": "2016-12-09T00:00:00Z"},
@@ -821,7 +821,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":13,"lon":81, "wind_speed": 140, "pressure": 970, "time": "2016-12-12T00:00:00Z"},
              {"lat":13.1,"lon":80.3, "wind_speed": 95, "pressure": 988, "time": "2016-12-13T00:00:00Z"}
          ]},
-        {"name": "Cyclone Thane", "year": 2011, "category": "Very Severe", "max_wind_kmh": 140, "rainfall_mm": 120, "damage_crore": 2200, "dates": "Dec 25-31, 2011", "landfall": "Near Cuddalore", "impact": "Heavy rains, 48 deaths total",
+        {"name": "Cyclone Thane", "year": 2011, "category": "Very Severe", "max_wind_kmh": 140, "rainfall_mm": 120, "damage_crore": 2200, "dates": "Dec 25-31, 2011", "landfall": "Near Cuddalore", "impact": "Heavy rains, 48 deaths total.", "cost": "$400 Million", "deaths": 48, "reason": "The system unexpectedly deepened right before landfall off the Tamil Nadu coast, bringing immense tidal waves to Puducherry and Cuddalore.", "rainfall": "120 mm", "flood_risk": "Moderate",
          "track": [
              {"lat":8.5,"lon":88, "wind_speed": 55, "pressure": 1004, "time": "2011-12-25T00:00:00Z"},
              {"lat":9.5,"lon":86, "wind_speed": 75, "pressure": 996, "time": "2011-12-27T00:00:00Z"},
@@ -829,7 +829,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":11.5,"lon":82, "wind_speed": 140, "pressure": 972, "time": "2011-12-29T00:00:00Z"},
              {"lat":11.8,"lon":80, "wind_speed": 100, "pressure": 988, "time": "2011-12-30T00:00:00Z"}
          ]},
-        {"name": "Cyclone Nisha", "year": 2008, "category": "Cyclonic Storm", "max_wind_kmh": 75, "rainfall_mm": 500, "damage_crore": 4500, "dates": "Nov 25-27, 2008", "landfall": "Near Karaikal", "impact": "500mm in 48hrs, worst flooding in decades",
+        {"name": "Cyclone Nisha", "year": 2008, "category": "Cyclonic Storm", "max_wind_kmh": 75, "rainfall_mm": 500, "damage_crore": 4500, "dates": "Nov 25-27, 2008", "landfall": "Near Karaikal", "impact": "500mm in 48hrs, worst flooding in decades.", "cost": "$800 Million", "deaths": 204, "reason": "Stalled parallel to the coast, serving as a 'firehose' to relentlessly dump half a meter of rain over the coastal plains of Tamil Nadu.", "rainfall": "500 mm extreme", "flood_risk": "Severe Flash Flooding",
          "track": [
              {"lat":8,"lon":84, "wind_speed": 45, "pressure": 1006, "time": "2008-11-25T00:00:00Z"},
              {"lat":9,"lon":82.5, "wind_speed": 60, "pressure": 998, "time": "2008-11-26T00:00:00Z"},
