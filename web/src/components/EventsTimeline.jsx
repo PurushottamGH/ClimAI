@@ -2,86 +2,29 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import './EventsTimeline.css';
 
 const TIMELINE_EVENTS = [
-  {
-    id: "EVT-2021-01",
-    query: "2021 Western North America heat wave",
-    category: "Extreme Heat",
-    type: "heatwave",
-    x: 240, y: 440,
-    region: "North America",
-    detail: "Category: Heatwave",
-  },
-  {
-    id: "EVT-2021-02",
-    query: "2021 European floods",
-    category: "Flood",
-    type: "flood",
-    x: 620, y: 250,
-    region: "Europe",
-    detail: "Category: Catastrophic Flooding",
-  },
-  {
-    id: "EVT-2022-01",
-    query: "2022 Pakistan floods",
-    category: "Flood",
-    type: "flood",
-    x: 700, y: 590,
-    region: "Asia",
-    detail: "Category: Mega Flood",
-  },
-  {
-    id: "EVT-2022-02",
-    query: "2022 Hunga Tonga–Hunga Haʻapai eruption",
-    category: "Volcano / Tsunami",
-    type: "volcano",
-    x: 100, y: 130,
-    region: "Pacific",
-    detail: "Category: Submarine Eruption",
-  },
-  {
-    id: "EVT-2023-01",
-    query: "2023 Turkey–Syria earthquake",
-    category: "Earthquake",
-    type: "earthquake",
-    x: 950, y: 100,
-    region: "Middle East",
-    detail: "Category: Seismic",
-  },
-  {
-    id: "EVT-2023-02",
-    query: "2023 Hawaii wildfires",
-    category: "Wildfire",
-    type: "wildfire",
-    x: 1100, y: 400,
-    region: "Pacific",
-    detail: "Category: Wildfire",
-  },
-  {
-    id: "EVT-2024-01",
-    query: "2024 Noto earthquake",
-    category: "Earthquake",
-    type: "earthquake",
-    x: 50, y: 700,
-    region: "Asia",
-    detail: "Category: Seismic",
-  },
-  {
-    id: "EVT-2024-02",
-    query: "2024 Atlantic hurricane season",
-    category: "Cyclone",
-    type: "cyclone",
-    x: 400, y: 780,
-    region: "Atlantic Basin",
-    detail: "Category: Hurricane",
-  }
+  { id: "EVT-2004", query: "2004 Indian Ocean earthquake and tsunami", type: "earthquake", x: 100, y: 500, region: "Indian Ocean", detail: "Seismic / Tsunami" },
+  { id: "EVT-2005", query: "Hurricane Katrina", type: "cyclone", x: 300, y: 200, region: "North America", detail: "Hurricane" },
+  { id: "EVT-2008", query: "Cyclone Nargis", type: "cyclone", x: 450, y: 700, region: "Pacific", detail: "Super Typhoon" },
+  { id: "EVT-2010-01", query: "2010 Haiti earthquake", type: "earthquake", x: 600, y: 350, region: "Caribbean", detail: "Seismic" },
+  { id: "EVT-2010-02", query: "2010 Northern Hemisphere summer heat waves", type: "heatwave", x: 800, y: 150, region: "Global", detail: "Heatwave" },
+  { id: "EVT-2011-01", query: "2011 Tōhoku earthquake and tsunami", type: "earthquake", x: 950, y: 650, region: "Asia", detail: "Seismic / Tsunami" },
+  { id: "EVT-2011-02", query: "2011 East Africa drought", type: "heatwave", x: 1100, y: 800, region: "Africa", detail: "Drought" },
+  { id: "EVT-2013", query: "Typhoon Haiyan", type: "cyclone", x: 1300, y: 400, region: "Asia", detail: "Super Typhoon" },
+  { id: "EVT-2015", query: "April 2015 Nepal earthquake", type: "earthquake", x: 1450, y: 250, region: "Asia", detail: "Seismic" },
+  { id: "EVT-2017", query: "Hurricane Maria", type: "cyclone", x: 1650, y: 550, region: "Caribbean", detail: "Hurricane" },
+  { id: "EVT-2019-01", query: "Cyclone Idai", type: "cyclone", x: 1800, y: 850, region: "Africa", detail: "Cyclone" },
+  { id: "EVT-2019-02", query: "2019–20 Australian bushfire season", type: "wildfire", x: 2000, y: 300, region: "Oceania", detail: "Bushfire" },
+  { id: "EVT-2021-01", query: "2021 Western North America heat wave", type: "heatwave", x: 2200, y: 100, region: "North America", detail: "Heatwave" },
+  { id: "EVT-2021-02", query: "2021 European floods", type: "flood", x: 2350, y: 600, region: "Europe", detail: "Flood" },
+  { id: "EVT-2022-01", query: "2022 Hunga Tonga–Hunga Haʻapai eruption and tsunami", type: "volcano", x: 2550, y: 800, region: "Pacific", detail: "Submarine Eruption" },
+  { id: "EVT-2022-02", query: "2022 Pakistan floods", type: "flood", x: 2700, y: 450, region: "Asia", detail: "Mega Flood" },
+  { id: "EVT-2023-01", query: "2023 Turkey–Syria earthquake", type: "earthquake", x: 2900, y: 200, region: "Middle East", detail: "Seismic" },
+  { id: "EVT-2023-02", query: "2023 Hawaii wildfires", type: "wildfire", x: 3050, y: 650, region: "Pacific", detail: "Wildfire" },
+  { id: "EVT-2024-01", query: "2024 Noto earthquake", type: "earthquake", x: 3250, y: 300, region: "Asia", detail: "Seismic" },
+  { id: "EVT-2024-02", query: "2024 Atlantic hurricane season", type: "cyclone", x: 3400, y: 850, region: "Atlantic", detail: "Hurricane" }
 ];
 
-const FILTERS = {
-  type: ["earthquake", "flood", "heatwave", "cyclone", "volcano", "wildfire"],
-  region: ["North America", "Europe", "Asia", "Pacific", "Middle East", "Atlantic Basin"]
-};
-
-const NAV_ITEMS = ["Events Timeline", "Index", "About", "Contact"];
+const TYPE_FILTERS = ["earthquake", "flood", "heatwave", "cyclone", "volcano", "wildfire"];
 
 // Fetch Wikipedia Data
 async function fetchWikiData(query) {
@@ -168,19 +111,13 @@ export default function EventsTimeline() {
       const b = TIMELINE_EVENTS[i + 1];
       const ax = a.x + 60, ay = a.y + 30;
       const bx = b.x + 60, by = b.y + 30;
-      const cx1 = ax + (bx - ax) * 0.5 + (Math.sin(i * 2) * 120);
-      const cy1 = ay - 80 + (Math.cos(i * 3) * 60);
-      const cx2 = bx - (bx - ax) * 0.5 + (Math.cos(i * 2) * 120);
-      const cy2 = by + 80 + (Math.sin(i * 3) * 60);
+      // Generates smoother forward-leaping curves
+      const distanceX = Math.abs(bx - ax);
+      const cx1 = ax + distanceX * 0.3;
+      const cy1 = ay + ((i % 2 === 0) ? -150 : 150);
+      const cx2 = bx - distanceX * 0.3;
+      const cy2 = by + ((i % 2 === 0) ? 150 : -150);
       paths.push(`M ${ax} ${ay} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${bx} ${by}`);
-    }
-    if (TIMELINE_EVENTS.length > 3) {
-      const a = TIMELINE_EVENTS[0], b = TIMELINE_EVENTS[3];
-      paths.push(`M ${a.x+60} ${a.y+30} C ${a.x+200} ${a.y-100}, ${b.x-200} ${b.y+200}, ${b.x+60} ${b.y+30}`);
-    }
-    if (TIMELINE_EVENTS.length > 5) {
-      const a = TIMELINE_EVENTS[2], b = TIMELINE_EVENTS[5];
-      paths.push(`M ${a.x+60} ${a.y+30} C ${a.x+300} ${a.y+300}, ${b.x-200} ${b.y-100}, ${b.x+60} ${b.y+30}`);
     }
     return paths;
   };
@@ -189,48 +126,22 @@ export default function EventsTimeline() {
 
   return (
     <div className="events-timeline-container">
-      {/* ── Top Nav Header ── */}
+      {/* ── Top Header ── */}
       <header className="events-header">
         <div className="header-left">
           <span className="header-brand">ClimAI</span>
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item}
-              className={`nav-btn ${item === "Events Timeline" ? "active" : ""}`}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Filters ── */}
-        <div className="header-filters-group">
-          {Object.entries(FILTERS).map(([group, items]) => (
-            <div key={group} style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ color: '#555', minWidth: '50px' }}>{group}:</span>
-              {items.map((item) => (
-                <button
-                  key={String(item)}
-                  onClick={() => toggleFilter(String(item))}
-                  className={`filter-item-btn ${activeFilters.includes(String(item)) ? "active" : ""}`}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          ))}
         </div>
 
         {/* ── Controls (Clear, Zoom) ── */}
         <div className="header-controls">
           <button onClick={clearFilters} className="clear-btn">
-            Clear Filters
+            Reset Filter
           </button>
           <div className="zoom-slider-container">
             <div className="zoom-slider-track">
               <input
                 type="range"
-                min={0.3}
+                min={0.2}
                 max={2}
                 step={0.05}
                 value={zoom}
@@ -239,12 +150,26 @@ export default function EventsTimeline() {
               />
               <div
                 className="zoom-slider-thumb"
-                style={{ left: `${((zoom - 0.3) / 1.7) * 100}%`, transform: "translate(-50%, -50%)" }}
+                style={{ left: `${((zoom - 0.2) / 1.8) * 100}%`, transform: "translate(-50%, -50%)" }}
               />
             </div>
           </div>
         </div>
       </header>
+
+      {/* ── Center Bottom Filters ── */}
+      <div className="bottom-filters-container">
+        <span className="bottom-filters-label">type:</span>
+        {TYPE_FILTERS.map((item) => (
+          <button
+            key={String(item)}
+            onClick={() => toggleFilter(String(item))}
+            className={`bottom-filter-link ${activeFilters.includes(String(item)) ? "active" : ""}`}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
 
       {/* ── Pannable Canvas ── */}
       <div
@@ -258,7 +183,9 @@ export default function EventsTimeline() {
         <div
           className="canvas-content"
           style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            width: '3800px',
+            height: '1400px'
           }}
         >
           {/* SVG Map Lines */}
@@ -289,7 +216,7 @@ export default function EventsTimeline() {
           {/* Real Project/Event Cards */}
           {TIMELINE_EVENTS.map((p) => {
              // If filters active, check if it matches
-             if (activeFilters.length > 0 && !activeFilters.includes(p.type) && !activeFilters.includes(p.region)) {
+             if (activeFilters.length > 0 && !activeFilters.includes(p.type)) {
                 return null;
              }
 
