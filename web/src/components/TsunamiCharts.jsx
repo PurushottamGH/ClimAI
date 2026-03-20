@@ -1,213 +1,131 @@
 import { useMemo } from 'react';
 import {
-    ResponsiveContainer, BarChart, Bar, LineChart, Line,
-    XAxis, YAxis, Tooltip, CartesianGrid, Cell,
+    ResponsiveContainer, BarChart, Bar,
+    XAxis, Tooltip, Cell,
 } from 'recharts';
-import '../components/EarthquakeCharts.css';
-
-// ── Plasma/viridis color by magnitude (matches map markers) ──
-function getMagColor(mag) {
-    if (mag <= 0) return '#888888';
-    if (mag >= 9.0) return '#fcffa4';
-    if (mag >= 8.8) return '#f0f921';
-    if (mag >= 8.6) return '#a0da39';
-    if (mag >= 8.4) return '#4ac16d';
-    if (mag >= 8.2) return '#1fa187';
-    if (mag >= 8.0) return '#277f8e';
-    if (mag >= 7.8) return '#365c8d';
-    return '#440154';
-}
-
-// ── Dark tooltip ──
-function DarkTooltip({ active, payload, type }) {
-    if (!active || !payload || !payload.length) return null;
-    const d = payload[0].payload;
-
-    if (type === 'wave') {
-        return (
-            <div className="eq-tooltip">
-                <div className="eq-tooltip-label">{d.name}</div>
-                <div className="eq-tooltip-value">Wave Height={d.wave_height_m} m</div>
-                <div style={{ color: '#9ca3af', fontSize: 11 }}>Magnitude: {d.magnitude || 'N/A'} • {d.year}</div>
-            </div>
-        );
-    }
-    if (type === 'timeline') {
-        return (
-            <div className="eq-tooltip">
-                <div className="eq-tooltip-label">{d.name}</div>
-                <div className="eq-tooltip-value">Magnitude={d.magnitude}</div>
-                <div style={{ color: '#9ca3af', fontSize: 11 }}>{d.date}</div>
-            </div>
-        );
-    }
-    if (type === 'fatalities') {
-        return (
-            <div className="eq-tooltip">
-                <div className="eq-tooltip-label">{d.name}</div>
-                <div className="eq-tooltip-value">Fatalities={d.fatalities.toLocaleString()}</div>
-                <div style={{ color: '#9ca3af', fontSize: 11 }}>Magnitude: {d.magnitude || 'N/A'} • {d.year}</div>
-            </div>
-        );
-    }
-    return null;
-}
-
-// ── Magnitude color legend ──
-function MagLegend() {
-    const items = [
-        { label: '9+', color: '#fcffa4' },
-        { label: '8.8', color: '#f0f921' },
-        { label: '8.6', color: '#a0da39' },
-        { label: '8.4', color: '#4ac16d' },
-        { label: '8.0', color: '#277f8e' },
-        { label: '7.8', color: '#365c8d' },
-    ];
-    return (
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginBottom: 2 }}>
-            <span style={{ color: '#6b7280', fontSize: 10 }}>magnitude</span>
-            {items.map(it => (
-                <span key={it.label} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: it.color, display: 'inline-block' }} />
-                    <span style={{ color: it.color, fontSize: 9 }}>{it.label}</span>
-                </span>
-            ))}
-        </div>
-    );
-}
-
-// ── Custom dot renderer for line chart (colored by magnitude) ──
-function MagDot(props) {
-    const { cx, cy, payload } = props;
-    if (!cx || !cy) return null;
-    return (
-        <circle cx={cx} cy={cy} r={4} fill={getMagColor(payload.magnitude)} stroke="#fff" strokeWidth={1} />
-    );
-}
+import ClimateWidget from './widgets/Common/ClimateWidget';
+import ArcGauge from './widgets/Gauges/ArcGauge';
+import GlowWaveform from './widgets/Charts/GlowWaveform';
+import SubValue from './widgets/Values/SubValue';
+import './widgets/ModularDashboard.css';
 
 export default function TsunamiCharts({ data = [] }) {
 
-    const chartData = useMemo(() => {
-        if (!data.length) return [];
-        return [...data]
-            .sort((a, b) => new Date(a.date) - new Date(b.date))
-            .map(t => ({
-                name: t.name,
-                shortName: t.name.length > 18 ? t.name.slice(0, 16) + '…' : t.name,
-                wave_height_m: t.wave_height_m,
-                magnitude: t.magnitude || 0,
-                magColor: getMagColor(t.magnitude || 0),
-                fatalities: t.fatalities,
-                origin: t.origin,
-                date: t.date,
-                year: new Date(t.date).getFullYear(),
-            }));
+    const { chartData, maxWaveHeight, totalFatalities, waveHistory, latestOrigin } = useMemo(() => {
+        if (!data.length) return { chartData: [], maxWaveHeight: 0, totalFatalities: 0, waveHistory: [], latestOrigin: '' };
+        
+        const sorted = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const maxH = data.reduce((m, t) => Math.max(m, t.wave_height_m || 0), 0);
+        const totalF = data.reduce((s, t) => s + (t.fatalities || 0), 0);
+        
+        return {
+            chartData: sorted.slice(-10).map(t => ({
+                name: t.name.length > 12 ? t.name.slice(0, 10) + '…' : t.name,
+                fatalities: t.fatalities || 0,
+                color: (t.magnitude || 0) > 8 ? '#EF4444' : '#2DE4FF'
+            })),
+            maxWaveHeight: maxH,
+            totalFatalities: totalF,
+            waveHistory: sorted.map(t => t.wave_height_m || 0),
+            latestOrigin: sorted[sorted.length - 1]?.origin || 'Unknown'
+        };
     }, [data]);
 
-    const timelineData = useMemo(() => chartData.filter(d => d.magnitude > 0), [chartData]);
-
-    if (!chartData.length) return null;
+    if (!data.length) return null;
 
     return (
-        <div className="eq-charts-row">
-            {/* Chart 1: Max wave height by event */}
-            <div className="eq-chart-card">
-                <div className="eq-chart-title">Max wave height by event</div>
-                <MagLegend />
-                <ResponsiveContainer width="100%" height="78%">
-                    <BarChart data={chartData} margin={{ top: 5, right: 10, left: -5, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1a1f2e" vertical={false} />
-                        <XAxis
-                            dataKey="shortName"
-                            tick={{ fill: '#5a6270', fontSize: 8 }}
-                            axisLine={{ stroke: '#1a1f2e' }}
-                            tickLine={false}
-                            angle={-30}
-                            textAnchor="end"
-                            height={50}
-                            label={{ value: 'Event', position: 'insideBottom', fill: '#5a6270', fontSize: 10, dy: 15 }}
+        <div className="modular-grid">
+            {/* Widget 1: Peak Wave */}
+            <ClimateWidget 
+                title="Max Wave Height" 
+                subtitle="Peak Surge Record" 
+                badge="MAJOR" 
+                badgeColor="#EF4444"
+            >
+                <ArcGauge 
+                    value={parseFloat(maxWaveHeight.toFixed(1))} 
+                    max={30} 
+                    label="METERS" 
+                    color="#EF4444" 
+                />
+            </ClimateWidget>
+
+            {/* Widget 2: Human Impact */}
+            <ClimateWidget 
+                title="Human Impact" 
+                subtitle="Cumulative Fatalities" 
+                badge="CRITICAL" 
+                badgeColor="#F97316"
+            >
+                <SubValue value={totalFatalities.toLocaleString()} unit="LIVES" color="#F97316" />
+                <div style={{ fontSize: '9px', color: '#555', fontWeight: '700' }}>TOTAL RECORDED IMPACT</div>
+            </ClimateWidget>
+
+            {/* Widget 3: Source Origin */}
+            <ClimateWidget 
+                title="Primary Origin" 
+                subtitle="Latest Event Source" 
+                badge="DETECT" 
+                badgeColor="#2DE4FF"
+            >
+                <div style={{ 
+                    fontSize: '12px', 
+                    color: '#fff', 
+                    fontWeight: '800', 
+                    textTransform: 'uppercase',
+                    margin: '10px 0',
+                    lineHeight: '1.2'
+                }}>
+                    {latestOrigin}
+                </div>
+                <div style={{ fontSize: '9px', color: '#555', fontWeight: '700' }}>SEISMIC TRIGGER ZONE</div>
+            </ClimateWidget>
+
+            {/* Widget 4: Surge Timeline */}
+            <ClimateWidget 
+                title="Wave Intensity" 
+                subtitle="Historical Surge Stream" 
+                className="span-2"
+            >
+                <GlowWaveform 
+                    data={waveHistory} 
+                    color="#2DE4FF" 
+                    height={100} 
+                    minVal={0} 
+                    maxVal={Math.max(...waveHistory, 10)} 
+                />
+            </ClimateWidget>
+
+            {/* Widget 5: Fatalities Grid */}
+            <ClimateWidget 
+                title="Event Comparison" 
+                subtitle="Fatalities per Surge" 
+                className="span-2"
+            >
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                        <XAxis dataKey="name" hide />
+                        <Tooltip 
+                            content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  return (
+                                    <div style={{ background: '#000', border: '1px solid #333', padding: '8px', borderRadius: '4px', fontSize: '10px' }}>
+                                      <div style={{ color: '#fff', fontWeight: 'bold' }}>{payload[0].payload.name}</div>
+                                      <div style={{ color: '#F97316' }}>Deaths: {payload[0].value}</div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                            }}
                         />
-                        <YAxis
-                            tick={{ fill: '#5a6270', fontSize: 10 }}
-                            axisLine={{ stroke: '#1a1f2e' }}
-                            tickLine={false}
-                            label={{ value: 'Height (m)', angle: -90, position: 'insideLeft', fill: '#5a6270', fontSize: 9, dx: 5 }}
-                        />
-                        <Tooltip content={<DarkTooltip type="wave" />} cursor={{ fill: 'rgba(127,200,248,0.06)' }} />
-                        <Bar dataKey="wave_height_m" radius={[2, 2, 0, 0]} maxBarSize={35}>
+                        <Bar dataKey="fatalities" radius={[2, 2, 0, 0]}>
                             {chartData.map((entry, i) => (
-                                <Cell key={i} fill={entry.magColor} />
+                                <Cell key={i} fill={entry.color} opacity={0.7} />
                             ))}
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
-            </div>
-
-            {/* Chart 2: Tsunami magnitude timeline */}
-            <div className="eq-chart-card">
-                <div className="eq-chart-title">Tsunami magnitude timeline</div>
-                <ResponsiveContainer width="100%" height="85%">
-                    <LineChart data={timelineData} margin={{ top: 5, right: 10, left: -5, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1a1f2e" vertical={false} />
-                        <XAxis
-                            dataKey="year"
-                            tick={{ fill: '#5a6270', fontSize: 10 }}
-                            axisLine={{ stroke: '#1a1f2e' }}
-                            tickLine={false}
-                            label={{ value: 'Year', position: 'insideBottom', fill: '#5a6270', fontSize: 10, dy: 8 }}
-                        />
-                        <YAxis
-                            tick={{ fill: '#5a6270', fontSize: 10 }}
-                            axisLine={{ stroke: '#1a1f2e' }}
-                            tickLine={false}
-                            domain={['auto', 'auto']}
-                            label={{ value: 'Magnitude', angle: -90, position: 'insideLeft', fill: '#5a6270', fontSize: 9, dx: 5 }}
-                        />
-                        <Tooltip content={<DarkTooltip type="timeline" />} />
-                        <Line
-                            type="monotone"
-                            dataKey="magnitude"
-                            stroke="#7fc8f8"
-                            strokeWidth={1.5}
-                            dot={<MagDot />}
-                            activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
-                        />
-                    </LineChart>
-                </ResponsiveContainer>
-            </div>
-
-            {/* Chart 3: Fatalities by event */}
-            <div className="eq-chart-card">
-                <div className="eq-chart-title">Fatalities by event</div>
-                <MagLegend />
-                <ResponsiveContainer width="100%" height="78%">
-                    <BarChart data={chartData} margin={{ top: 5, right: 10, left: 5, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1a1f2e" vertical={false} />
-                        <XAxis
-                            dataKey="shortName"
-                            tick={{ fill: '#5a6270', fontSize: 8 }}
-                            axisLine={{ stroke: '#1a1f2e' }}
-                            tickLine={false}
-                            angle={-30}
-                            textAnchor="end"
-                            height={50}
-                            label={{ value: 'Event', position: 'insideBottom', fill: '#5a6270', fontSize: 10, dy: 15 }}
-                        />
-                        <YAxis
-                            tick={{ fill: '#5a6270', fontSize: 10 }}
-                            axisLine={{ stroke: '#1a1f2e' }}
-                            tickLine={false}
-                            label={{ value: 'Fatalities', angle: -90, position: 'insideLeft', fill: '#5a6270', fontSize: 9, dx: 5 }}
-                        />
-                        <Tooltip content={<DarkTooltip type="fatalities" />} cursor={{ fill: 'rgba(248,127,127,0.06)' }} />
-                        <Bar dataKey="fatalities" radius={[2, 2, 0, 0]} maxBarSize={35}>
-                            {chartData.map((entry, i) => (
-                                <Cell key={i} fill={entry.magColor} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </div>
+            </ClimateWidget>
         </div>
     );
 }

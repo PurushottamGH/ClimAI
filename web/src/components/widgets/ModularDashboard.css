@@ -1,0 +1,46 @@
+.modular-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  padding: 16px 20px 30px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar for a tech feel */
+.modular-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.modular-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modular-grid::-webkit-scrollbar-thumb {
+  background: rgba(45, 228, 255, 0.2);
+  border-radius: 10px;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+@media (max-width: 1400px) {
+  .span-2 {
+    grid-column: span 1;
+  }
+  .modular-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .modular-grid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+}
