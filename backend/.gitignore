@@ -8,3 +8,15 @@ climai.log
 .git/
 .venv/
 .vscode/
+
+*.ttf
+*.woff
+*.woff2
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+__pycache__/
+*.pyc
+web/
