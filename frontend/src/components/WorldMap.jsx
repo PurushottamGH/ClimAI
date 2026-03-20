@@ -7,6 +7,48 @@ import WikiCard from './WikiCard';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './WorldMap.css';
 
+// ── Land mask: world-atlas + topojson ──────────────────────
+import landTopo from 'world-atlas/land-110m.json';
+import { feature } from 'topojson-client';
+
+const landGeoJSON = feature(landTopo, landTopo.objects.land);
+
+/** Ray-casting point-in-polygon test */
+function pointInPolygon(lat, lon, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/** Check if [lon, lat] falls inside any land polygon */
+function isLandPoint(lat, lon) {
+  for (const geom of landGeoJSON.geometry.type === 'MultiPolygon'
+    ? landGeoJSON.geometry.coordinates
+    : [landGeoJSON.geometry.coordinates]) {
+    // geom is an array of rings; [0] = outer ring
+    if (pointInPolygon(lat, lon, geom[0])) return true;
+  }
+  return false;
+}
+
+// ── Pre-compute the 2° land grid once at module load ──────
+const LAND_GRID = (() => {
+  const pts = [];
+  for (let lat = -88; lat <= 88; lat += 2) {
+    for (let lon = -180; lon <= 178; lon += 2) {
+      if (isLandPoint(lat, lon)) pts.push({ lat, lon });
+    }
+  }
+  return pts; // ~4,800 land-only points
+})();
+
+// ═══════════════════════════════════════════════════════════
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 const INITIAL_VIEW_STATE = {
@@ -64,9 +106,7 @@ function getTsunamiMagColorArr(mag) {
 }
 
 // ═══════════════════════════════════════════════════
-// TEMPERATURE COLOR — 14-stop smooth gradient
-// deep indigo → blue → cyan → teal → green → lime
-// → yellow-green → yellow → orange → dark-orange → red → dark-red → maroon
+// TEMPERATURE COLOR — exact 14-stop smooth gradient
 // ═══════════════════════════════════════════════════
 function getTempColor(temp) {
   const stops = [
@@ -104,21 +144,11 @@ function getTempColor(temp) {
 }
 
 // ═══════════════════════════════════════════════════
-// GLOBAL GRID GENERATOR — 2° resolution (~16,400 pts)
-// Fetches current temperature from Open-Meteo in
-// parallel batches of 1000 lat/lon pairs each
+// Open-Meteo batch fetcher — 1000 points per request
+// 5 concurrent batches at a time
 // ═══════════════════════════════════════════════════
-function buildGlobalGrid() {
-  const pts = [];
-  for (let lat = -88; lat <= 88; lat += 2) {
-    for (let lon = -180; lon <= 178; lon += 2) {
-      pts.push({ lat, lon });
-    }
-  }
-  return pts;
-}
-
 const BATCH_SIZE = 1000;
+const CONCURRENCY = 5;
 
 async function fetchOpenMeteoTemps(points) {
   const lats = points.map(p => p.lat).join(',');
@@ -128,7 +158,6 @@ async function fetchOpenMeteoTemps(points) {
     `?latitude=${lats}&longitude=${lons}` +
     `&current=temperature_2m` +
     `&forecast_days=1&wind_speed_unit=kmh&timezone=auto`;
-
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
   const data = await res.json();
@@ -140,13 +169,9 @@ async function fetchOpenMeteoTemps(points) {
   })).filter(d => d.temp_c !== null);
 }
 
-async function fetchAllGlobalTemps(onProgress) {
-  const grid = buildGlobalGrid();
+async function fetchAllLandTemps(onProgress) {
+  const grid = LAND_GRID; // already filtered to land only
   const results = [];
-  const total = Math.ceil(grid.length / BATCH_SIZE);
-
-  // Fire up to 5 concurrent batches at a time
-  const CONCURRENCY = 5;
   for (let i = 0; i < grid.length; i += BATCH_SIZE * CONCURRENCY) {
     const batchGroup = [];
     for (let j = 0; j < CONCURRENCY && i + j * BATCH_SIZE < grid.length; j++) {
@@ -184,14 +209,12 @@ function TempLegend({ loadPct }) {
       <div className="temp-legend-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>Temperature °C</span>
         {loadPct !== null && loadPct < 100 && (
-          <span style={{ fontSize: 10, color: '#aaa', fontFamily: 'DM Mono, monospace' }}>
+          <span style={{ fontSize: 10, color: '#aaa', fontFamily: 'monospace' }}>
             Loading grid {loadPct}%
           </span>
         )}
       </div>
-      {/* Gradient bar */}
       <div className="temp-legend-bar" style={{ background: gradient }} />
-      {/* Dot swatches */}
       <div className="temp-legend-ticks">
         {ticks.map(t => {
           const [r, g, b] = getTempColor(t);
@@ -232,20 +255,20 @@ export default function WorldMap({
   const [gridLoadPct, setGridLoadPct] = useState(null);
   const gridFetchedRef = useRef(false);
 
-  // Fetch global grid once when temperature tab is first activated
+  // Fetch land-only grid once when temperature tab is first activated
   useEffect(() => {
     if (category !== 'temperature') return;
     if (gridFetchedRef.current) return;
     gridFetchedRef.current = true;
 
     setGridLoadPct(0);
-    fetchAllGlobalTemps((pct) => setGridLoadPct(pct))
+    fetchAllLandTemps((pct) => setGridLoadPct(pct))
       .then(data => {
         setGlobalTempGrid(data);
         setGridLoadPct(100);
       })
       .catch(err => {
-        console.error('Global grid fetch failed:', err);
+        console.error('Global grid fetch failed, falling back to API data:', err);
         setGridLoadPct(100);
       });
   }, [category]);
@@ -255,7 +278,7 @@ export default function WorldMap({
     const seen = new Set();
     const merged = [];
 
-    // API data takes priority (more accurate / historical)
+    // API data takes priority
     const apiData = tempMapData.map(d => ({
       lat: d.lat,
       lon: d.lon,
@@ -264,13 +287,13 @@ export default function WorldMap({
     }));
 
     apiData.forEach(d => {
-      const key = `${Math.round(d.lat * 2) / 2},${Math.round(d.lon * 2) / 2}`;
+      const key = `${Math.round(d.lat)},${Math.round(d.lon)}`;
       if (!seen.has(key)) { seen.add(key); merged.push(d); }
     });
 
-    // Fill gaps with Open-Meteo global grid
+    // Fill gaps with Open-Meteo global grid (land-only)
     globalTempGrid.forEach(d => {
-      const key = `${Math.round(d.lat * 2) / 2},${Math.round(d.lon * 2) / 2}`;
+      const key = `${Math.round(d.lat)},${Math.round(d.lon)}`;
       if (!seen.has(key)) { seen.add(key); merged.push(d); }
     });
 
@@ -445,39 +468,33 @@ export default function WorldMap({
   }), [tsunamis, category]);
 
   // ═══════════════════════════════════════════════════════════════
-  // LAYER: Temperature DOT-GRID  ←  THE FIX IS HERE
-  //
-  // Two-layer approach replicating the reference image:
-  //   Layer 1 — GLOW ring:  larger radius, low opacity, soft bloom
-  //   Layer 2 — CORE dot:   small sharp pixel dot, full brightness
-  //
-  // radiusUnits: 'pixels' → dots stay same size regardless of zoom
-  // radiusMinPixels / radiusMaxPixels control the look precisely
+  // LAYER: Temperature DOT-GRID — 3-layer glow effect
+  //   Layer 1 — GLOW:    10px radius, opacity 35/255, decorative
+  //   Layer 2 — MIDGLOW: 7px radius,  opacity 70/255, decorative
+  //   Layer 3 — CORE:    4px radius,  opacity 230/255, pickable
   // ═══════════════════════════════════════════════════════════════
   const isTempVisible = category === 'temperature';
 
-  // Glow layer — outer soft halo
   const tempGlowLayer = useMemo(() => new ScatterplotLayer({
     id: 'temperature-glow',
     data: isTempVisible ? mergedTempData : [],
-    pickable: false,           // glow is decorative only, no picking
+    pickable: false,
     opacity: 1,
     stroked: false,
     filled: true,
     radiusUnits: 'pixels',
     radiusMinPixels: 1,
-    radiusMaxPixels: 11,
+    radiusMaxPixels: 10,
     getPosition: d => [d.lon, d.lat],
-    getRadius: 11,             // outer glow radius in pixels
+    getRadius: 10,
     getFillColor: d => {
       const temp = d.temp_c ?? d.temp_max ?? 0;
       const [r, g, b] = getTempColor(temp);
-      return [r, g, b, 35];   // very transparent — just a soft bloom
+      return [r, g, b, 35];
     },
     updateTriggers: { getFillColor: [mergedTempData.length] }
   }), [mergedTempData, isTempVisible]);
 
-  // Mid glow layer
   const tempMidGlowLayer = useMemo(() => new ScatterplotLayer({
     id: 'temperature-midglow',
     data: isTempVisible ? mergedTempData : [],
@@ -493,12 +510,11 @@ export default function WorldMap({
     getFillColor: d => {
       const temp = d.temp_c ?? d.temp_max ?? 0;
       const [r, g, b] = getTempColor(temp);
-      return [r, g, b, 70];   // semi-transparent mid ring
+      return [r, g, b, 70];
     },
     updateTriggers: { getFillColor: [mergedTempData.length] }
   }), [mergedTempData, isTempVisible]);
 
-  // Core dot layer — the sharp, bright center dot
   const tempCoreLayer = useMemo(() => new ScatterplotLayer({
     id: 'temperature-core',
     data: isTempVisible ? mergedTempData : [],
@@ -510,11 +526,11 @@ export default function WorldMap({
     radiusMinPixels: 1,
     radiusMaxPixels: 4,
     getPosition: d => [d.lon, d.lat],
-    getRadius: 4,              // sharp 4px core — tiny and precise
+    getRadius: 4,
     getFillColor: d => {
       const temp = d.temp_c ?? d.temp_max ?? 0;
       const [r, g, b] = getTempColor(temp);
-      return [r, g, b, 230];  // near-opaque bright dot
+      return [r, g, b, 230];
     },
     onHover: info => setHoverInfo(info ? { ...info, isTempDot: true } : null),
     updateTriggers: { getFillColor: [mergedTempData.length] }
@@ -527,7 +543,6 @@ export default function WorldMap({
     cycloneCenterPointLayer,
     cycloneEyeLayer,
     tsunamiLayer,
-    // Temperature: glow first (bottom), then core on top
     tempGlowLayer,
     tempMidGlowLayer,
     tempCoreLayer,
@@ -548,7 +563,7 @@ export default function WorldMap({
         <div className="deckgl-tooltip temp-tooltip" style={{ left: x + 14, top: y - 48 }}>
           <div className="tt-content">
             {object.label && (
-              <div style={{ fontSize: 11, color: '#ccc', marginBottom: 3, fontFamily: 'DM Mono, monospace', letterSpacing: 1 }}>
+              <div style={{ fontSize: 11, color: '#ccc', marginBottom: 3, fontFamily: 'monospace', letterSpacing: 1 }}>
                 {object.label}
               </div>
             )}
