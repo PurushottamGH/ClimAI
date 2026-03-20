@@ -350,55 +350,56 @@ export default function WorldMap({
     id: 'temperature-heat-native',
     type: 'heatmap',
     paint: {
-      // Weight by temperature value — hotter regions contribute more to density
+      // Weight by actual temperature — cold areas barely visible, hot areas strong
       'heatmap-weight': [
         'interpolate', ['linear'], ['get', 'temp'],
-        -30, 0.1,
-        0, 0.3,
-        15, 0.6,
-        25, 0.85,
+        -20, 0.05,
+        0, 0.2,
+        15, 0.5,
+        25, 0.8,
         35, 1.0,
-        45, 1.3
+        50, 1.2
       ],
-      // High intensity so nearby points fully blend into continuous coverage
+      // Low intensity keeps colours distinct — prevents washout to white
       'heatmap-intensity': [
         'interpolate', ['linear'], ['zoom'],
-        0, 2.5,
-        2, 3.5,
-        4, 5.0,
-        6, 7.0
+        0, 0.8,
+        2, 1.2,
+        4, 1.8,
+        6, 2.5
       ],
-      // Weather-radar color ramp: transparent → deep blue → purple → red → orange → yellow → white
+      // Classic met-office temperature ramp:
+      // transparent → navy → blue → cyan → green → yellow → orange → red → white
       'heatmap-color': [
         'interpolate', ['linear'], ['heatmap-density'],
         0, 'rgba(0,0,0,0)',
-        0.04, 'rgba(0,10,60,0.5)',
-        0.12, 'rgba(20,40,160,0.8)',
-        0.25, 'rgba(80,10,130,0.88)',
-        0.40, 'rgba(160,20,50,0.92)',
-        0.55, 'rgba(210,70,10,0.95)',
-        0.70, 'rgba(240,150,0,0.97)',
-        0.85, 'rgba(252,220,20,1)',
-        1.0, 'rgba(255,255,220,1)'
+        0.05, 'rgba(0,0,80,0.6)',
+        0.15, 'rgba(0,50,200,0.75)',
+        0.28, 'rgba(0,180,220,0.82)',
+        0.42, 'rgba(0,200,100,0.87)',
+        0.55, 'rgba(220,220,0,0.92)',
+        0.68, 'rgba(255,140,0,0.95)',
+        0.82, 'rgba(220,30,30,0.97)',
+        1.0, 'rgba(255,255,255,1)'
       ],
-      // Large zoom-responsive radius — this is the key fix for smooth blending
+      // Tighter radius — points blend on land but don't spill far into ocean
       'heatmap-radius': [
         'interpolate', ['linear'], ['zoom'],
-        0, 55,
-        1, 70,
-        2, 90,
-        3, 110,
-        4, 140,
-        5, 180,
-        6, 240
+        0, 20,
+        1, 28,
+        2, 38,
+        3, 52,
+        4, 70,
+        5, 95,
+        6, 130
       ],
-      // Slight fade at high zoom so individual data points are readable
+      // Consistent opacity — subtle enough to see map underneath
       'heatmap-opacity': [
         'interpolate', ['linear'], ['zoom'],
-        0, 0.92,
-        3, 0.88,
-        5, 0.80,
-        7, 0.65
+        0, 0.82,
+        3, 0.78,
+        5, 0.72,
+        7, 0.60
       ]
     }
   };
