@@ -241,25 +241,27 @@ export default function WorldMap({
     });
   }, [cyclones, animTime]);
 
+  const CYCLONE_ICON_DATA = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="14" fill="white" /><path d="M50,35 C70,35 80,45 85,65" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" /><path d="M50,65 C30,65 20,55 15,35" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" /><path d="M65,50 C65,70 55,80 35,85" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" /><path d="M35,50 C35,30 45,20 65,15" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" /></svg>`;
+
   const cycloneEyeLayer = useMemo(() => new IconLayer({
     id: 'cyclone-eyes',
     data: currentCyclonePos,
     pickable: true,
     getIcon: d => ({
-      url: '/cyclone_icon.svg',
+      url: CYCLONE_ICON_DATA,
       width: 100,
       height: 100,
       anchorY: 50,
-      anchorX: 50
+      anchorX: 50,
+      mask: true
     }),
     sizeScale: 1,
-    sizeMinPixels: 30,
-    sizeMaxPixels: 60,
+    sizeMinPixels: 35,
+    sizeMaxPixels: 70,
     getPosition: d => d.currentPos,
-    getSize: d => 50,
+    getSize: d => 60,
     getAngle: d => (animTime * 360 * 15),
     getColor: d => {
-        // Ensure color is bright and visible
         const c = getCycloneCatColorArr(d.category);
         return [c[0], c[1], c[2], 255]; 
     },
