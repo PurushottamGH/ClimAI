@@ -914,8 +914,8 @@ def get_temperature_map():
             )
 
     try:
-        # STEP = 3 gives ~7000 land points — dense enough for city-lights style heatmap
-        STEP = 3
+        # STEP = 2 gives ~6000 land points — dense enough for seamless dot-grid
+        STEP = 2
         all_points = []
         month = datetime.now().month
 

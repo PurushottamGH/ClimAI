@@ -370,30 +370,24 @@ export default function WorldMap({
     id: 'temperature-dots',
     data: category === 'temperature' ? tempMapData : [],
     pickable: true,
-    opacity: 0.92,
-    stroked: true,
+    opacity: 0.95,
+    stroked: false,
     filled: true,
-    radiusUnits: 'pixels',
-    radiusMinPixels: 3,
-    radiusMaxPixels: 14,
-    lineWidthMinPixels: 0.5,
+    radiusUnits: 'meters',
+    radiusMinPixels: 2,
+    radiusMaxPixels: 20,
     getPosition: d => [d.lon, d.lat],
-    getRadius: 6,
+    // 2° grid ≈ 222km apart → radius of 110km makes dots nearly touch
+    getRadius: 110000,
     getFillColor: d => {
       const temp = d.temp_c != null ? d.temp_c : (d.temp_max || 0);
       const [r, g, b] = getTempColor(temp);
-      return [r, g, b, 220];
-    },
-    getLineColor: d => {
-      const temp = d.temp_c != null ? d.temp_c : (d.temp_max || 0);
-      const [r, g, b] = getTempColor(temp);
-      return [r, g, b, 80];
+      return [r, g, b, 210];
     },
     onHover: info => setHoverInfo(info ? { ...info, isTempDot: true } : null),
     visible: category === 'temperature',
     updateTriggers: {
-      getFillColor: [tempMapData],
-      getLineColor: [tempMapData]
+      getFillColor: [tempMapData]
     }
   }), [tempMapData, category]);
 
