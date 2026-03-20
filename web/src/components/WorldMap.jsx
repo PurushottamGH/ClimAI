@@ -253,10 +253,16 @@ export default function WorldMap({
       anchorX: 50
     }),
     sizeScale: 1,
+    sizeMinPixels: 30,
+    sizeMaxPixels: 60,
     getPosition: d => d.currentPos,
-    getSize: d => 40,
-    getAngle: d => (animTime * 360 * 15), // Spin 15 times per cycle
-    getColor: d => getCycloneCatColorArr(d.category),
+    getSize: d => 50,
+    getAngle: d => (animTime * 360 * 15),
+    getColor: d => {
+        // Ensure color is bright and visible
+        const c = getCycloneCatColorArr(d.category);
+        return [c[0], c[1], c[2], 255]; 
+    },
     updateTriggers: {
       getPosition: [animTime],
       getAngle: [animTime]
@@ -275,6 +281,18 @@ export default function WorldMap({
     },
     visible: category === 'cyclone'
   }), [currentCyclonePos, category, animTime]);
+
+  const cycloneCenterPointLayer = useMemo(() => new ScatterplotLayer({
+    id: 'cyclone-center-fallback',
+    data: currentCyclonePos,
+    pickable: false,
+    opacity: 0.8,
+    radiusMinPixels: 2,
+    radiusMaxPixels: 4,
+    getPosition: d => d.currentPos,
+    getFillColor: [255, 255, 255, 200],
+    visible: category === 'cyclone'
+  }), [currentCyclonePos, category]);
 
   // ═══════════════════════════════
   // LAYER: Tsunamis
@@ -360,6 +378,7 @@ export default function WorldMap({
     eqLayer,
     cycloneImpactLayer,
     cyclonePathLayer,
+    cycloneCenterPointLayer,
     cycloneEyeLayer,
     tsunamiLayer
   ];
