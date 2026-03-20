@@ -16,8 +16,11 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Push to hub
+      - name: Install huggingface_hub
+        run: pip install huggingface_hub
+
+      - name: Sync to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push --force https://ipurushottam:$HF_TOKEN@huggingface.co/spaces/ipurushottam/climai main
+          python -c "from huggingface_hub import HfApi; api = HfApi(token='$HF_TOKEN'); api.upload_folder(folder_path='.', repo_id='ipurushottam/climai', repo_type='space', ignore_patterns=['.git/*','node_modules/*','__pycache__/*','.venv/*','*.pyc'])"
