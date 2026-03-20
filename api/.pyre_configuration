@@ -1,8 +1,0 @@
-{
-    "site_package_search_strategy": "all",
-    "search_path": ["."],
-    "source_directories": ["."],
-    "strict": [],
-    "targets": [],
-    "typeshed": "bundled"
-}
