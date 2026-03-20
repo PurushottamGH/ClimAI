@@ -25,6 +25,23 @@
     z-index: 1000;
 }
 
+/* Temperature tooltip — compact and clean */
+.deckgl-tooltip.temp-tooltip {
+    min-width: 100px;
+    padding: 8px 14px;
+    background: rgba(10, 10, 15, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(8px);
+    border-radius: 8px;
+}
+
+.deckgl-tooltip .tt-temp-value {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    text-shadow: 0 0 12px currentColor;
+}
+
 .deckgl-tooltip .tt-content {
     display: flex;
     flex-direction: column;
@@ -45,7 +62,54 @@
 }
 
 .deckgl-tooltip .tt-sub {
-    color: #5b8a9a;
-    font-size: 12px;
-    margin-bottom: 3px;
+    color: #6b8fa0;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════
+   Temperature Legend Bar
+   ═══════════════════════════════════════ */
+.temp-legend {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+}
+
+.temp-legend-title {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+}
+
+.temp-legend-bar {
+    width: 380px;
+    height: 10px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.temp-legend-ticks {
+    display: flex;
+    justify-content: space-between;
+    width: 380px;
+}
+
+.temp-legend-tick {
+    font-family: 'Inter', monospace;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    width: 30px;
 }

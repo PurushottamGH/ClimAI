@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import Map, { Source, Layer } from 'react-map-gl';
+import Map from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
 import { ScatterplotLayer, PathLayer, IconLayer } from '@deck.gl/layers';
@@ -7,7 +7,6 @@ import WikiCard from './WikiCard';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './WorldMap.css';
 
-// Using Carto's free dark matter basemap cleanly with maplibre-gl
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 const INITIAL_VIEW_STATE = {
@@ -44,9 +43,9 @@ function getMagRadiusSq(mag) {
 // CYCLONE helpers
 // ═══════════════════════════════
 function getCycloneCatColorArr(cat) {
-  if (cat.includes('Very Severe')) return [245, 183, 197]; // Pink
-  if (cat.includes('Severe')) return [91, 155, 213];      // Blue
-  return [127, 200, 248];                                 // Light blue
+  if (cat.includes('Very Severe')) return [245, 183, 197];
+  if (cat.includes('Severe')) return [91, 155, 213];
+  return [127, 200, 248];
 }
 
 // ═══════════════════════════════
@@ -63,6 +62,76 @@ function getTsunamiMagColorArr(mag) {
   if (mag >= 7.8) return [54, 92, 141];
   return [68, 1, 84];
 }
+
+// ═══════════════════════════════════════════════════
+// TEMPERATURE DOT-GRID helpers
+// Smooth multi-stop gradient: blue → cyan → green → yellow → orange → red → darkred
+// ═══════════════════════════════════════════════════
+function getTempColor(temp) {
+  // Color stops: [temp, R, G, B]
+  const stops = [
+    [-40, 20, 0, 80],      // deep indigo
+    [-25, 40, 20, 170],     // dark blue
+    [-10, 50, 80, 220],     // blue
+    [0, 30, 160, 200],      // cyan
+    [5, 20, 190, 140],      // teal
+    [10, 40, 200, 80],      // green
+    [15, 120, 210, 40],     // lime green
+    [20, 200, 220, 30],     // yellow-green
+    [25, 250, 210, 10],     // yellow
+    [30, 255, 160, 0],      // orange
+    [35, 250, 100, 0],      // dark orange
+    [40, 230, 40, 10],      // red
+    [45, 180, 10, 20],      // dark red
+    [52, 120, 0, 30],       // maroon
+  ];
+
+  if (temp <= stops[0][0]) return [stops[0][1], stops[0][2], stops[0][3]];
+  if (temp >= stops[stops.length - 1][0]) {
+    const last = stops[stops.length - 1];
+    return [last[1], last[2], last[3]];
+  }
+
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (temp >= stops[i][0] && temp <= stops[i + 1][0]) {
+      const t = (temp - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
+      return [
+        Math.round(stops[i][1] + t * (stops[i + 1][1] - stops[i][1])),
+        Math.round(stops[i][2] + t * (stops[i + 1][2] - stops[i][2])),
+        Math.round(stops[i][3] + t * (stops[i + 1][3] - stops[i][3]))
+      ];
+    }
+  }
+  return [200, 200, 200];
+}
+
+// ═══════════════════════════════════════════════════
+// Temperature Legend Bar Component
+// ═══════════════════════════════════════════════════
+function TempLegend() {
+  const ticks = [-30, -20, -10, 0, 10, 20, 30, 40, 50];
+  // Build CSS gradient from our color stops
+  const gradientStops = [];
+  for (let t = -35; t <= 52; t += 2) {
+    const [r, g, b] = getTempColor(t);
+    const pct = ((t + 35) / 87 * 100).toFixed(1);
+    gradientStops.push(`rgb(${r},${g},${b}) ${pct}%`);
+  }
+  const gradient = `linear-gradient(to right, ${gradientStops.join(', ')})`;
+
+  return (
+    <div className="temp-legend">
+      <div className="temp-legend-title">Temperature °C</div>
+      <div className="temp-legend-bar" style={{ background: gradient }} />
+      <div className="temp-legend-ticks">
+        {ticks.map(t => (
+          <span key={t} className="temp-legend-tick">{t}°</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
 export default function WorldMap({
   category = 'earthquake',
@@ -81,7 +150,6 @@ export default function WorldMap({
   // Animation Loop for Cyclones
   useEffect(() => {
     let animationId;
-    // We update animTime from 0 to 1 over a few seconds
     const animate = () => {
       if (isAnimating) {
         setAnimTime((t) => (t + 0.002) % 1);
@@ -142,21 +210,14 @@ export default function WorldMap({
   // ═══════════════════════════════
   // LAYER: Cyclones
   // ═══════════════════════════════
-  // Build tracks
   const cycloneTracks = useMemo(() => cyclones.filter(c => c.track?.length > 1).map(c => {
-    // Sort track by time to ensure path correctness
     const sortedTrack = c.track[0].time ? [...c.track].sort((a, b) => new Date(a.time) - new Date(b.time)) : c.track;
     const fullPath = sortedTrack.map(p => [p.lon, p.lat]);
-
-    // Partially reveal path based on animTime
     const numPoints = fullPath.length;
     const limit = Math.max(2, Math.floor(animTime * (numPoints - 1)) + 1);
     const visiblePath = fullPath.slice(0, limit);
-
-    // Append interpolated current position for smoothness
     const currentPos = getInterpolatedPos(sortedTrack, animTime);
     visiblePath.push(currentPos);
-
     return {
       name: c.name,
       path: visiblePath,
@@ -185,34 +246,9 @@ export default function WorldMap({
       if (!c.track || c.track.length === 0) return;
       const sortedTrack = c.track[0].time ? [...c.track].sort((a, b) => new Date(a.time) - new Date(b.time)) : c.track;
       const latest = sortedTrack[sortedTrack.length - 1];
-
-      // Low: 250km, Yellow
-      data.push({
-        ...c,
-        lon: latest.lon,
-        lat: latest.lat,
-        radius: 250000,
-        color: [255, 255, 0, 64],
-        impactType: 'Low'
-      });
-      // Medium: 120km, Orange
-      data.push({
-        ...c,
-        lon: latest.lon,
-        lat: latest.lat,
-        radius: 120000,
-        color: [255, 165, 0, 89],
-        impactType: 'Medium'
-      });
-      // High: 50km, Red
-      data.push({
-        ...c,
-        lon: latest.lon,
-        lat: latest.lat,
-        radius: 50000,
-        color: [255, 0, 0, 102],
-        impactType: 'High'
-      });
+      data.push({ ...c, lon: latest.lon, lat: latest.lat, radius: 250000, color: [255, 255, 0, 64], impactType: 'Low' });
+      data.push({ ...c, lon: latest.lon, lat: latest.lat, radius: 120000, color: [255, 165, 0, 89], impactType: 'Medium' });
+      data.push({ ...c, lon: latest.lon, lat: latest.lat, radius: 50000, color: [255, 0, 0, 102], impactType: 'High' });
     });
     return data;
   }, [cyclones]);
@@ -326,84 +362,40 @@ export default function WorldMap({
     visible: category === 'tsunami'
   }), [tsunamis, category]);
 
-  // ═══════════════════════════════
-  // LAYER: Temperature Heatmap (Native Maplibre)
-  // ═══════════════════════════════
-  const temperatureGeoJSON = useMemo(() => {
-    if (category !== 'temperature' || !tempMapData) return null;
-    return {
-      type: 'FeatureCollection',
-      features: tempMapData.map(d => ({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [d.lon, d.lat]
-        },
-        properties: {
-          temp: d.temp_max != null ? d.temp_max : (d.temp_c || 0)
-        }
-      }))
-    };
-  }, [tempMapData, category]);
-
-  const heatmapLayerProps = {
-    id: 'temperature-heat-native',
-    type: 'heatmap',
-    paint: {
-      // Weight: cold = faint, hot = bright core like city lights
-      'heatmap-weight': [
-        'interpolate', ['linear'], ['get', 'temp'],
-        -30, 0.05,
-        0, 0.15,
-        10, 0.35,
-        20, 0.60,
-        30, 0.85,
-        40, 1.0,
-        52, 1.3
-      ],
-      // Moderate intensity — keeps bright cores without full bleed
-      'heatmap-intensity': [
-        'interpolate', ['linear'], ['zoom'],
-        0, 1.2,
-        2, 1.8,
-        4, 2.8,
-        6, 4.0
-      ],
-      // City-lights style: dark void → deep blue → purple → red → orange → bright yellow/white
-      'heatmap-color': [
-        'interpolate', ['linear'], ['heatmap-density'],
-        0, 'rgba(0,0,0,0)',
-        0.02, 'rgba(10,5,50,0.5)',
-        0.10, 'rgba(40,10,120,0.75)',
-        0.22, 'rgba(120,10,160,0.85)',
-        0.38, 'rgba(200,30,60,0.90)',
-        0.52, 'rgba(240,80,10,0.94)',
-        0.68, 'rgba(255,160,0,0.97)',
-        0.82, 'rgba(255,230,30,1)',
-        1.0, 'rgba(255,255,255,1)'
-      ],
-      // Small tight radius — creates distinct bright cores like city lights
-      // not spreading blobs
-      'heatmap-radius': [
-        'interpolate', ['linear'], ['zoom'],
-        0, 14,
-        1, 20,
-        2, 28,
-        3, 38,
-        4, 52,
-        5, 72,
-        6, 100
-      ],
-      // Strong opacity at low zoom fades slightly when zoomed in
-      'heatmap-opacity': [
-        'interpolate', ['linear'], ['zoom'],
-        0, 0.88,
-        3, 0.84,
-        5, 0.76,
-        7, 0.65
-      ]
+  // ═══════════════════════════════════════════════════
+  // LAYER: Temperature DOT-GRID (replaces old heatmap)
+  // Each data point = one colored circle on the map
+  // ═══════════════════════════════════════════════════
+  const tempDotLayer = useMemo(() => new ScatterplotLayer({
+    id: 'temperature-dots',
+    data: category === 'temperature' ? tempMapData : [],
+    pickable: true,
+    opacity: 0.92,
+    stroked: true,
+    filled: true,
+    radiusUnits: 'pixels',
+    radiusMinPixels: 3,
+    radiusMaxPixels: 14,
+    lineWidthMinPixels: 0.5,
+    getPosition: d => [d.lon, d.lat],
+    getRadius: 6,
+    getFillColor: d => {
+      const temp = d.temp_c != null ? d.temp_c : (d.temp_max || 0);
+      const [r, g, b] = getTempColor(temp);
+      return [r, g, b, 220];
+    },
+    getLineColor: d => {
+      const temp = d.temp_c != null ? d.temp_c : (d.temp_max || 0);
+      const [r, g, b] = getTempColor(temp);
+      return [r, g, b, 80];
+    },
+    onHover: info => setHoverInfo(info ? { ...info, isTempDot: true } : null),
+    visible: category === 'temperature',
+    updateTriggers: {
+      getFillColor: [tempMapData],
+      getLineColor: [tempMapData]
     }
-  };;
+  }), [tempMapData, category]);
 
   const layers = [
     eqLayer,
@@ -411,7 +403,8 @@ export default function WorldMap({
     cyclonePathLayer,
     cycloneCenterPointLayer,
     cycloneEyeLayer,
-    tsunamiLayer
+    tsunamiLayer,
+    tempDotLayer
   ];
 
   // Tooltip rendering
@@ -419,15 +412,26 @@ export default function WorldMap({
     if (!hoverInfo || !hoverInfo.object || !hoverInfo.picked) return null;
     const { object, x, y } = hoverInfo;
 
+    // Temperature dot tooltip
+    if (hoverInfo.isTempDot) {
+      const temp = object.temp_c != null ? object.temp_c : (object.temp_max || 0);
+      const [r, g, b] = getTempColor(temp);
+      return (
+        <div className="deckgl-tooltip temp-tooltip" style={{ left: x, top: y }}>
+          <div className="tt-content">
+            <div className="tt-temp-value" style={{ color: `rgb(${r},${g},${b})` }}>
+              {temp.toFixed(1)}°C
+            </div>
+            <div className="tt-sub">
+              {object.lat.toFixed(1)}°{object.lat >= 0 ? 'N' : 'S'}, {object.lon.toFixed(1)}°{object.lon >= 0 ? 'E' : 'W'}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="deckgl-tooltip" style={{ left: x, top: y }}>
-        {category === 'temperature' && hoverInfo.isHeatmap && (
-          <div className="tt-content">
-            <div className="tt-title">Temperature</div>
-            <div className="tt-value">{object.temp_c.toFixed(1)}°C</div>
-            <div className="tt-sub">Lat: {object.lat.toFixed(1)} / Lon: {object.lon.toFixed(1)}</div>
-          </div>
-        )}
         {category === 'earthquake' && (
           <div className="tt-content">
             <div className="tt-title">{object.place}</div>
@@ -465,15 +469,12 @@ export default function WorldMap({
           mapLib={maplibregl}
           mapStyle={MAP_STYLE}
           preventStyleDiffing={true}
-        >
-          {category === 'temperature' && temperatureGeoJSON && (
-            <Source id="temperature-source" type="geojson" data={temperatureGeoJSON}>
-              <Layer {...heatmapLayerProps} />
-            </Source>
-          )}
-        </Map>
+        />
         {renderTooltip()}
       </DeckGL>
+
+      {/* Temperature color legend bar */}
+      {category === 'temperature' && <TempLegend />}
 
       <WikiCard
         event={selectedEvent}
