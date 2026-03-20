@@ -1,3 +1,7 @@
+/* ══════════════════════════════════════════════════════
+   MODULAR DASHBOARD — 3-Box Premium Layout
+   ══════════════════════════════════════════════════════ */
+
 .modular-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -11,34 +15,159 @@
   overflow-x: hidden;
 }
 
-/* Custom scrollbar for a tech feel */
+/* ── Three-Box Layout ── */
+.three-box-layout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  padding: 14px 18px 28px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ── Chart Box (each of the 3 boxes) ── */
+.chart-box {
+  background: rgba(10, 14, 20, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(45, 228, 255, 0.08);
+  border-radius: 10px;
+  padding: 16px 18px 10px;
+  box-sizing: border-box;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chart-box:hover {
+  border-color: rgba(45, 228, 255, 0.2);
+  box-shadow: 0 0 20px rgba(45, 228, 255, 0.06);
+}
+
+/* ── Chart Box Header ── */
+.chart-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.chart-box-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #bbb;
+}
+
+.chart-box-legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chart-box-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: #666;
+}
+
+.chart-box-legend-item .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ── Chart Body (fills remaining space) ── */
+.chart-box-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/* ── Custom Scrollbar ── */
+.three-box-layout::-webkit-scrollbar,
 .modular-grid::-webkit-scrollbar {
   width: 4px;
 }
 
+.three-box-layout::-webkit-scrollbar-track,
 .modular-grid::-webkit-scrollbar-track {
   background: transparent;
 }
 
+.three-box-layout::-webkit-scrollbar-thumb,
 .modular-grid::-webkit-scrollbar-thumb {
   background: rgba(45, 228, 255, 0.2);
   border-radius: 10px;
 }
 
+/* ── Premium Tooltip ── */
+.premium-tooltip {
+  background: rgba(8, 10, 18, 0.95) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(45, 228, 255, 0.15) !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+.premium-tooltip-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.premium-tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 2px 0;
+}
+
+.premium-tooltip-label {
+  color: #888;
+}
+
+.premium-tooltip-value {
+  font-weight: 600;
+}
+
+/* ── Span Utilities ── */
 .span-2 {
   grid-column: span 2;
 }
 
-@media (max-width: 1400px) {
-  .span-2 {
-    grid-column: span 1;
-  }
-  .modular-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+/* ── Responsive ── */
+@media (max-width: 1200px) {
+  .three-box-layout {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 12px;
   }
 }
 
 @media (max-width: 768px) {
+  .three-box-layout {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
   .modular-grid {
     grid-template-columns: 1fr;
     padding: 12px;

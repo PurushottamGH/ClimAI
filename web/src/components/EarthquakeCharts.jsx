@@ -1,123 +1,193 @@
 import { useMemo } from 'react';
 import {
-    ResponsiveContainer, BarChart, Bar,
-    XAxis, Tooltip, Cell,
+    ResponsiveContainer, LineChart, Line, BarChart, Bar, ScatterChart, Scatter,
+    XAxis, YAxis, Tooltip, CartesianGrid, Cell, ZAxis, ReferenceLine,
 } from 'recharts';
-import ClimateWidget from './widgets/Common/ClimateWidget';
-import ArcGauge from './widgets/Gauges/ArcGauge';
-import GlowWaveform from './widgets/Charts/GlowWaveform';
-import SubValue from './widgets/Values/SubValue';
 import './widgets/ModularDashboard.css';
 
+/* ── Custom Tooltip ── */
+function QuakeTooltip({ active, payload, label }) {
+    if (!active || !payload?.length) return null;
+    return (
+        <div className="premium-tooltip">
+            <div className="premium-tooltip-title">{payload[0]?.payload?.place || payload[0]?.payload?.name || label}</div>
+            {payload.map((p, i) => (
+                <div key={i} className="premium-tooltip-row">
+                    <span className="premium-tooltip-label">{p.name}</span>
+                    <span className="premium-tooltip-value" style={{ color: p.color || '#2DE4FF' }}>
+                        {typeof p.value === 'number' ? p.value.toFixed(2) : p.value}
+                    </span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 export default function EarthquakeCharts({ data = [] }) {
-    
-    const { totalCount, maxMag, riskFactor, magHistory, chartData } = useMemo(() => {
-        if (!data.length) return { totalCount: 0, maxMag: 0, riskFactor: 0, magHistory: [], chartData: [] };
-        
+
+    const { timelineData, regionData, scatterData } = useMemo(() => {
+        if (!data.length) return { timelineData: [], regionData: [], scatterData: [] };
+
         const sorted = [...data].sort((a, b) => new Date(a.time) - new Date(b.time));
-        const max = data.reduce((m, eq) => Math.max(m, eq.magnitude), 0);
-        const highMagCount = data.filter(d => d.magnitude > 5.0).length;
-        const score = ((highMagCount / data.length) * 10) + (max);
-        
-        return {
-            totalCount: data.length,
-            maxMag: max,
-            riskFactor: Math.min(Math.max(score, 0), 10),
-            magHistory: sorted.map(eq => eq.magnitude),
-            chartData: sorted.slice(-10).map(eq => ({
-                name: eq.place ? eq.place.split(',').pop().trim() : 'Unknown',
-                magnitude: eq.magnitude,
-                color: eq.magnitude > 6 ? '#EF4444' : (eq.magnitude > 4 ? '#F97316' : '#2DE4FF')
+
+        const timeline = sorted.map((eq, i) => ({
+            idx: i + 1,
+            'Magnitude': eq.magnitude,
+            place: eq.place || 'Unknown',
+            depth: eq.depth || 0,
+        }));
+
+        // Group by region (last part of place string)
+        const regionMap = {};
+        data.forEach(eq => {
+            const region = eq.place ? eq.place.split(',').pop().trim() : 'Unknown';
+            if (!regionMap[region]) regionMap[region] = { count: 0, maxMag: 0 };
+            regionMap[region].count++;
+            regionMap[region].maxMag = Math.max(regionMap[region].maxMag, eq.magnitude);
+        });
+        const region = Object.entries(regionMap)
+            .map(([name, v]) => ({
+                name: name.length > 15 ? name.slice(0, 13) + '…' : name,
+                'Events': v.count,
+                'Peak Mag': parseFloat(v.maxMag.toFixed(1)),
+                color: v.maxMag > 6 ? '#EF4444' : v.maxMag > 4 ? '#F97316' : '#2DE4FF',
             }))
-        };
+            .sort((a, b) => b['Events'] - a['Events'])
+            .slice(0, 10);
+
+        const scatter = sorted.map(eq => ({
+            depth: eq.depth || 0,
+            'Magnitude': eq.magnitude,
+            place: eq.place || 'Unknown',
+            size: Math.pow(eq.magnitude, 2.5) * 2,
+            color: eq.magnitude > 6 ? '#EF4444' : eq.magnitude > 4 ? '#F97316' : '#2DE4FF',
+        }));
+
+        return { timelineData: timeline, regionData: region, scatterData: scatter };
     }, [data]);
 
     if (!data.length) return null;
 
     return (
-        <div className="modular-grid">
-            {/* Widget 1: Strongest Event */}
-            <ClimateWidget 
-                title="Strongest Event" 
-                subtitle="Peak Magnitude" 
-                badge="MAJOR" 
-                badgeColor="#EF4444"
-            >
-                <ArcGauge 
-                    value={parseFloat(maxMag.toFixed(1))} 
-                    max={10} 
-                    label="RICHTER SCALE" 
-                    color="#EF4444" 
-                />
-            </ClimateWidget>
+        <div className="three-box-layout">
+            {/* ── Box 1: Magnitude Timeline ── */}
+            <div className="chart-box">
+                <div className="chart-box-header">
+                    <span className="chart-box-title">MAGNITUDE TIMELINE</span>
+                    <div className="chart-box-legend">
+                        <span className="chart-box-legend-item"><span className="dot" style={{ background: '#F97316' }} /> Magnitude</span>
+                    </div>
+                </div>
+                <div className="chart-box-body">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={timelineData} margin={{ top: 8, right: 12, left: -10, bottom: 4 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                            <XAxis
+                                dataKey="idx"
+                                tick={{ fontSize: 9, fill: '#555', fontFamily: 'DM Mono' }}
+                                axisLine={{ stroke: '#222' }}
+                                tickLine={false}
+                                label={{ value: 'Event #', position: 'insideBottom', offset: -2, style: { fontSize: 8, fill: '#444' } }}
+                            />
+                            <YAxis
+                                tick={{ fontSize: 9, fill: '#444', fontFamily: 'DM Mono' }}
+                                axisLine={false}
+                                tickLine={false}
+                                domain={[0, 10]}
+                            />
+                            <Tooltip content={<QuakeTooltip />} />
+                            <ReferenceLine y={5} stroke="#F97316" strokeDasharray="4 4" strokeOpacity={0.4} label={{ value: 'M5.0', position: 'right', style: { fontSize: 8, fill: '#F97316' } }} />
+                            <Line
+                                type="monotone"
+                                dataKey="Magnitude"
+                                stroke="#F97316"
+                                strokeWidth={2}
+                                dot={{ r: 2.5, fill: '#F97316', stroke: '#0a0e14', strokeWidth: 1 }}
+                                activeDot={{ r: 5, fill: '#fff', stroke: '#F97316', strokeWidth: 2 }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
 
-            {/* Widget 2: Seismic Activity */}
-            <ClimateWidget 
-                title="Seismic Activity" 
-                subtitle="Detections (24h)" 
-                badge="ACTIVE" 
-                badgeColor="#2DE4FF"
-            >
-                <SubValue value={totalCount.toLocaleString()} unit="TREMORS" color="#2DE4FF" />
-                <div style={{ fontSize: '9px', color: '#555', fontWeight: '700' }}>TOTAL GLOBAL QUAKES</div>
-            </ClimateWidget>
+            {/* ── Box 2: Activity by Region ── */}
+            <div className="chart-box">
+                <div className="chart-box-header">
+                    <span className="chart-box-title">ACTIVITY BY REGION</span>
+                    <div className="chart-box-legend">
+                        <span className="chart-box-legend-item"><span className="dot" style={{ background: '#2DE4FF' }} /> Events</span>
+                    </div>
+                </div>
+                <div className="chart-box-body">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={regionData} layout="vertical" margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
+                            <XAxis
+                                type="number"
+                                tick={{ fontSize: 9, fill: '#444', fontFamily: 'DM Mono' }}
+                                axisLine={false}
+                                tickLine={false}
+                            />
+                            <YAxis
+                                dataKey="name"
+                                type="category"
+                                tick={{ fontSize: 9, fill: '#666', fontFamily: 'DM Mono' }}
+                                axisLine={false}
+                                tickLine={false}
+                                width={80}
+                            />
+                            <Tooltip content={<QuakeTooltip />} cursor={{ fill: 'rgba(45, 228, 255, 0.04)' }} />
+                            <Bar dataKey="Events" radius={[0, 4, 4, 0]}>
+                                {regionData.map((entry, i) => (
+                                    <Cell key={i} fill={entry.color} fillOpacity={0.8} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
 
-            {/* Widget 3: Risk Index */}
-            <ClimateWidget 
-                title="Seismic Risk" 
-                subtitle="Hazard Assessment" 
-                badge="INDEX" 
-                badgeColor="#F97316"
-            >
-                <SubValue value={riskFactor.toFixed(1)} unit="/ 10" color="#F97316" />
-                <div style={{ fontSize: '9px', color: '#555', fontWeight: '700' }}>REGIONAL SURGE PROBABILITY</div>
-            </ClimateWidget>
-
-            {/* Widget 4: Magnitude History */}
-            <ClimateWidget 
-                title="Tremor Intensity" 
-                subtitle="Tectonic Pulse Stream" 
-                className="span-2"
-            >
-                <GlowWaveform 
-                    data={magHistory} 
-                    color="#F97316" 
-                    height={100} 
-                    minVal={0} 
-                    maxVal={10} 
-                />
-            </ClimateWidget>
-
-            {/* Widget 5: Recent Impact */}
-            <ClimateWidget 
-                title="Regional Impact" 
-                subtitle="Latest Significant Events" 
-                className="span-2"
-            >
-                <ResponsiveContainer width="100%" height={100}>
-                    <BarChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-                        <XAxis dataKey="name" hide />
-                        <Tooltip 
-                            content={({ active, payload }) => {
-                                if (active && payload && payload.length) {
-                                  return (
-                                    <div style={{ background: '#000', border: '1px solid #333', padding: '8px', borderRadius: '4px', fontSize: '10px' }}>
-                                      <div style={{ color: '#fff', fontWeight: 'bold' }}>{payload[0].payload.name}</div>
-                                      <div style={{ color: '#F97316' }}>Mag: {payload[0].value}</div>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                            }}
-                        />
-                        <Bar dataKey="magnitude" radius={[2, 2, 0, 0]}>
-                            {chartData.map((entry, i) => (
-                                <Cell key={i} fill={entry.color} opacity={0.7} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </ClimateWidget>
+            {/* ── Box 3: Depth vs Magnitude Scatter ── */}
+            <div className="chart-box">
+                <div className="chart-box-header">
+                    <span className="chart-box-title">DEPTH vs MAGNITUDE</span>
+                    <div className="chart-box-legend">
+                        <span className="chart-box-legend-item"><span className="dot" style={{ background: '#EF4444' }} /> M6+</span>
+                        <span className="chart-box-legend-item"><span className="dot" style={{ background: '#F97316' }} /> M4-6</span>
+                        <span className="chart-box-legend-item"><span className="dot" style={{ background: '#2DE4FF' }} /> {'<M4'}</span>
+                    </div>
+                </div>
+                <div className="chart-box-body">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <ScatterChart margin={{ top: 8, right: 12, left: -10, bottom: 4 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                            <XAxis
+                                dataKey="depth"
+                                name="Depth (km)"
+                                tick={{ fontSize: 9, fill: '#555', fontFamily: 'DM Mono' }}
+                                axisLine={{ stroke: '#222' }}
+                                tickLine={false}
+                                unit=" km"
+                            />
+                            <YAxis
+                                dataKey="Magnitude"
+                                name="Magnitude"
+                                tick={{ fontSize: 9, fill: '#444', fontFamily: 'DM Mono' }}
+                                axisLine={false}
+                                tickLine={false}
+                                domain={[0, 10]}
+                            />
+                            <ZAxis dataKey="size" range={[20, 200]} />
+                            <Tooltip content={<QuakeTooltip />} />
+                            <Scatter data={scatterData}>
+                                {scatterData.map((entry, i) => (
+                                    <Cell key={i} fill={entry.color} fillOpacity={0.7} />
+                                ))}
+                            </Scatter>
+                        </ScatterChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
         </div>
     );
 }
