@@ -70,7 +70,8 @@ export default function WorldMap({
   cyclones = [],
   tsunamis = [],
   weather = [],
-  tempMapData = []
+  tempMapData = [],
+  isAnimating = true
 }) {
   const [hoverInfo, setHoverInfo] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -81,14 +82,16 @@ export default function WorldMap({
     let animationId;
     // We update animTime from 0 to 1 over a few seconds
     const animate = () => {
-      setAnimTime((t) => (t + 0.002) % 1);
+      if (isAnimating) {
+        setAnimTime((t) => (t + 0.002) % 1);
+      }
       animationId = window.requestAnimationFrame(animate);
     };
     if (category === 'cyclone') {
       animate();
     }
     return () => window.cancelAnimationFrame(animationId);
-  }, [category]);
+  }, [category, isAnimating]);
 
   const getInterpolatedPos = (track, timeRatio) => {
     if (!track || track.length === 0) return [0, 0];
@@ -142,14 +145,25 @@ export default function WorldMap({
   const cycloneTracks = useMemo(() => cyclones.filter(c => c.track?.length > 1).map(c => {
     // Sort track by time to ensure path correctness
     const sortedTrack = c.track[0].time ? [...c.track].sort((a, b) => new Date(a.time) - new Date(b.time)) : c.track;
+    const fullPath = sortedTrack.map(p => [p.lon, p.lat]);
+    
+    // Partially reveal path based on animTime
+    const numPoints = fullPath.length;
+    const limit = Math.max(2, Math.floor(animTime * (numPoints - 1)) + 1);
+    const visiblePath = fullPath.slice(0, limit);
+    
+    // Append interpolated current position for smoothness
+    const currentPos = getInterpolatedPos(sortedTrack, animTime);
+    visiblePath.push(currentPos);
+
     return {
       name: c.name,
-      path: sortedTrack.map(p => [p.lon, p.lat]),
+      path: visiblePath,
       color: getCycloneCatColorArr(c.category),
       ...c,
       track: sortedTrack
     };
-  }), [cyclones]);
+  }), [cyclones, animTime]);
 
   const cyclonePathLayer = useMemo(() => new PathLayer({
     id: 'cyclone-paths',

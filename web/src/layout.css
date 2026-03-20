@@ -157,6 +157,36 @@
     color: rgba(255, 255, 255, 0.9);
 }
 
+.anim-control-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(16, 16, 18, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    color: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    transition: all 0.15s ease;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.anim-control-btn:hover {
+    background: rgba(255, 255, 255, 0.95);
+    color: #111111;
+    transform: scale(1.08);
+}
+
+.anim-control-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
 /* ── Common Dashboard Analytics Rows (Restored) ── */
 .eq-charts-row {
     display: flex;

@@ -24,6 +24,7 @@ export default function App() {
   const [tempMapData, setTempMapData] = useState([]);
   const [selectedCyclone, setSelectedCyclone] = useState('All');
   const [weatherTab, setWeatherTab] = useState('Overview');
+  const [isAnimating, setIsAnimating] = useState(true);
 
   useEffect(() => {
     api.getEarthquakes()
@@ -59,6 +60,7 @@ export default function App() {
         cyclones={filteredCyclones}
         tsunamis={tsunamiData}
         tempMapData={tempMapData}
+        isAnimating={isAnimating}
       />
 
       <TopNavigation activeView={mainView} onChangeView={setMainView} />
@@ -84,6 +86,23 @@ export default function App() {
                   <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
               </div>
+            )}
+            {category === 'cyclone' && (
+              <button 
+                className="anim-control-btn" 
+                onClick={() => setIsAnimating(!isAnimating)}
+                title={isAnimating ? "Pause Animation" : "Play Animation"}
+              >
+                {isAnimating ? (
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
             )}
             {category === 'weather' && (
               <div className="cyclone-select-wrapper" style={{ position: 'relative' }}>
