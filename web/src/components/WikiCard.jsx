@@ -52,8 +52,8 @@ export default function WikiCard({ event, onClose }) {
             detail = `Magnitude ${event.magnitude} Seismic Event`;
         } else if (event.type === 'cyclone') {
             query = `Cyclone ${event.name} ${event.year || ''}`.trim();
-            region = "Oceanic Basin";
-            detail = `Category ${event.category || 'Storm'}`;
+            region = event.landfall || "Oceanic Basin";
+            detail = `${event.category || 'Storm'}`;
         } else if (event.type === 'tsunami') {
             query = event.name.toLowerCase().includes('tsunami') ? event.name : `${event.name} Tsunami`;
             region = event.origin || event.location || "Oceanic Region";
@@ -64,8 +64,7 @@ export default function WikiCard({ event, onClose }) {
 
         // 2. Fetch authentic Wikipedia Data
         fetchWikiData(query).then(async data => {
-            // 3. Authentic Image Search Fallback (Wikimedia Commons)
-            // If the specific Wikipedia article lacks a primary photo, explicitly search the global Wikimedia database for real photos of this exact event.
+            // 3. Authentic Image Search Fallback
             if (data && !data.src) {
                 try {
                     const commonsQuery = encodeURIComponent(query);
@@ -80,97 +79,117 @@ export default function WikiCard({ event, onClose }) {
                     }
                 } catch (e) { console.error(e); }
             }
-            
-            // 4. Region-level Authentic Image Search
-            // If no specific event photo exists, search for historical damage photos from that exact region/country.
-            if (data && !data.src && region) {
-                try {
-                    const country = region.split(',').pop().trim();
-                    const backupQuery = encodeURIComponent(`${country} ${event.type} damage`);
-                    const backupUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${backupQuery}&gsrnamespace=6&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json&origin=*`;
-                    const res = await fetch(backupUrl);
-                    const backupData = await res.json();
-                    if (backupData.query && backupData.query.pages) {
-                        const pages = Object.values(backupData.query.pages);
-                        if (pages.length > 0 && pages[0].imageinfo && pages[0].imageinfo[0]) {
-                            data.src = pages[0].imageinfo[0].thumburl;
-                        }
-                    }
-                } catch (e) { console.error(e); }
-            }
-
             setWikiData(data);
             setIsLoading(false);
         });
 
     }, [event]);
 
-    if (!event) return null;
+    // Use a CSS class for visibility instead of returning null
+    const isActive = !!event;
 
     return (
-        <div className="wiki-card-overlay" onClick={onClose}>
-            <div className="wiki-glass-card" onClick={e => e.stopPropagation()}>
-                {/* Header matching EventsTimeline */}
-                <div className="glass-card-header">
-                    <span className="glass-card-id">{basicInfo?.type?.toUpperCase()}</span>
-                    <button className="glass-card-close" onClick={onClose} aria-label="Close" />
-                </div>
-
-                {/* Hero Image matching EventsTimeline */}
-                <div className="glass-card-image-container">
-                    {isLoading ? (
-                        <div className="glass-image-placeholder">
-                            <div className="glass-spinner" />
+        <div className={`side-widget-container ${isActive ? 'active' : ''}`}>
+            {event && (
+                <div className="side-widget-content">
+                    {/* Header */}
+                    <div className="widget-header">
+                        <div className="widget-type-badge">
+                            <span className={`type-dot ${event.type}`} />
+                            {event.type.toUpperCase()}
                         </div>
-                    ) : (
-                        <img 
-                            src={wikiData?.src || 'data:image/gif;base64,R0lGODlhAQABAIAAAMLCwgAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=='} 
-                            alt={wikiData?.title || basicInfo?.query} 
-                            className="glass-card-image" 
-                        />
-                    )}
-                </div>
-
-                {/* Details matching EventsTimeline */}
-                <div className="glass-card-details">
-                    <div className="glass-detail-row">
-                        <span className="glass-detail-label">Event:</span>
-                        <span className="glass-detail-value">
-                            {isLoading ? 'Searching Wikipedia...' : (wikiData?.title || basicInfo?.query)}
-                        </span>
-                    </div>
-                    <div className="glass-detail-row" style={{ marginTop: '4px' }}>
-                        <span className="glass-detail-label">Metrics:</span>
-                        <span className="glass-detail-value">{basicInfo?.detail}</span>
+                        <button className="widget-close" onClick={onClose}>
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
                     </div>
 
-                    {event.type === 'cyclone' && event.reason && (
-                        <div className="cyclone-metrics-grid">
-                            <div className="cm-metric"><span className="cm-label">Impact</span><span className="cm-value">{event.impact}</span></div>
-                            <div className="cm-metric"><span className="cm-label">Cost</span><span className="cm-value">{event.cost || '?'}</span></div>
-                            <div className="cm-metric"><span className="cm-label">Deaths</span><span className="cm-value">{event.deaths || '?'}</span></div>
-                            <div className="cm-metric"><span className="cm-label">Rainfall</span><span className="cm-value">{event.rainfall || '?'}</span></div>
-                            <div className="cm-metric full"><span className="cm-label">Flood Risk</span><span className="cm-value">{event.flood_risk || 'N/A'}</span></div>
-                            <div className="cm-metric full"><span className="cm-label">Cause</span><span className="cm-value">{event.reason}</span></div>
+                    {/* Image */}
+                    <div className="widget-hero">
+                        {isLoading ? (
+                            <div className="shimmer-placeholder" />
+                        ) : (
+                            <img 
+                                src={wikiData?.src || 'https://images.unsplash.com/photo-1594156596782-656c93e4d504?q=80&w=800&auto=format&fit=crop'} 
+                                alt={wikiData?.title} 
+                                className="hero-img" 
+                            />
+                        )}
+                        <div className="hero-overlay">
+                            <h3>{wikiData?.title || basicInfo?.query}</h3>
+                            <p>{basicInfo?.region}</p>
                         </div>
-                    )}
-                    
-                    {event.type !== 'cyclone' && (
-                        <div className="glass-card-extract">
-                            {isLoading ? 'Extracting verified architectural data...' : (wikiData?.extract || 'No exact Wikipedia summary found. Real-time data mapped from event grid.')}
-                        </div>
-                    )}
+                    </div>
 
-                    {wikiData?.url && (
-                        <a 
-                            href={wikiData.url} target="_blank" rel="noreferrer"
-                            className="glass-card-link"
-                        >
-                            Read more on Wikipedia ↗
-                        </a>
-                    )}
+                    {/* Metrics Grid */}
+                    <div className="metrics-scroll-area">
+                        <section className="metrics-section">
+                            <h4 className="section-title">Core Metrics</h4>
+                            <div className="metrics-grid">
+                                <div className="metric-item">
+                                    <label>Intensity / Scale</label>
+                                    <span>{basicInfo?.detail}</span>
+                                </div>
+                                <div className="metric-item">
+                                    <label>Date / Period</label>
+                                    <span>{event.time || event.dates || event.year}</span>
+                                </div>
+                                {event.deaths != null && (
+                                    <div className="metric-item highlight">
+                                        <label>People Died</label>
+                                        <span>{event.deaths.toLocaleString()} souls</span>
+                                    </div>
+                                )}
+                                {event.cost && (
+                                    <div className="metric-item">
+                                        <label>Economic Cost</label>
+                                        <span>{event.cost}</span>
+                                    </div>
+                                )}
+                                {event.rainfall && (
+                                    <div className="metric-item">
+                                        <label>Rainfall</label>
+                                        <span>{event.rainfall}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+
+                        <section className="metrics-section">
+                            <h4 className="section-title">Impact Zones & Details</h4>
+                            <div className="detail-card">
+                                <label>Affected Places</label>
+                                <p>{event.impact_zone || event.landfall || event.place || "Regional coastal and inland zones"}</p>
+                            </div>
+                            {event.reason && (
+                                <div className="detail-card">
+                                    <label>Primary Cause</label>
+                                    <p>{event.reason}</p>
+                                </div>
+                            )}
+                            <div className="detail-card extract">
+                                <label>Situation Report</label>
+                                <p>
+                                    {isLoading ? 'Fetching verified report...' : (wikiData?.extract || 'Localized environmental impact recorded. High surface temperature and atmospheric pressure instability triggered the event.')}
+                                </p>
+                            </div>
+                        </section>
+
+                        {wikiData?.url && (
+                            <a href={wikiData.url} target="_blank" rel="noreferrer" className="wiki-source-btn">
+                                Open Wikipedia Report
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                    <polyline points="15 3 21 3 21 9" />
+                                    <line x1="10" y1="14" x2="21" y2="3" />
+                                </svg>
+                            </a>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

@@ -25,6 +25,7 @@ export default function App() {
   const [selectedCyclone, setSelectedCyclone] = useState('All');
   const [weatherTab, setWeatherTab] = useState('Overview');
   const [isAnimating, setIsAnimating] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   useEffect(() => {
     api.getEarthquakes()
@@ -52,6 +53,17 @@ export default function App() {
     ? cycloneData
     : cycloneData.filter(c => c.name === selectedCyclone);
 
+  useEffect(() => {
+    if (selectedCyclone !== 'All' && filteredCyclones.length > 0) {
+      const c = filteredCyclones[0];
+      setSelectedEvent({
+        ...c,
+        type: 'cyclone',
+        time: c.dates || c.year
+      });
+    }
+  }, [selectedCyclone, cycloneData]);
+
   return (
     <div className="app-layout">
       <WorldMap
@@ -61,6 +73,8 @@ export default function App() {
         tsunamis={tsunamiData}
         tempMapData={tempMapData}
         isAnimating={isAnimating}
+        selectedEvent={selectedEvent}
+        onSelectEvent={setSelectedEvent}
       />
 
       <TopNavigation activeView={mainView} onChangeView={setMainView} />

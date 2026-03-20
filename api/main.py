@@ -779,7 +779,13 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
     
     # Base cyclone data (simulating IBTrACS format for tracks)
     cyclones = [
-        {"name": "Cyclone Michaung", "year": 2023, "category": "Severe Cyclonic Storm", "max_wind_kmh": 100, "rainfall_mm": 450, "damage_crore": 8000, "dates": "Dec 1-5, 2023", "landfall": "Near Bapatla, AP", "impact": "Record 240mm rainfall, severe flooding, 17 deaths.", "cost": "$960 Million", "deaths": 17, "reason": "Slow-moving system lingered near the coast, pulling intense oceanic moisture into stationary bands over Chennai.", "rainfall": "450 mm extreme", "flood_risk": "Catastrophic Urban Flooding",
+        {"name": "Cyclone Michaung", "year": 2023, "category": "Severe Cyclonic Storm", "max_wind_kmh": 100, 
+         "dates": "Dec 1-5, 2023", "landfall": "Near Bapatla, AP", 
+         "impact": "Record 240mm rainfall in 24h, catastrophic urban flooding.", 
+         "cost": "$960 Million", "deaths": 17, 
+         "impact_zone": "Chennai, Kancheepuram, Tiruvallur, Nellore, Bapatla",
+         "reason": "Slow-moving system lingered near the coast, pulling intense oceanic moisture into stationary bands over Chennai.", 
+         "rainfall": "450 mm (Total Event)", "flood_risk": "Catastrophic Urban Flooding",
          "track": [
              {"lat":10.5,"lon":83, "wind_speed": 55, "pressure": 1002, "time": "2023-12-01T00:00:00Z"},
              {"lat":11,"lon":82.5, "wind_speed": 75, "pressure": 996, "time": "2023-12-02T00:00:00Z"},
@@ -788,7 +794,13 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":14,"lon":80.5, "wind_speed": 85, "pressure": 990, "time": "2023-12-05T00:00:00Z"},
              {"lat":15.5,"lon":80.2, "wind_speed": 50, "pressure": 1000, "time": "2023-12-06T00:00:00Z"}
          ]},
-        {"name": "Cyclone Mandous", "year": 2022, "category": "Cyclonic Storm", "max_wind_kmh": 85, "rainfall_mm": 180, "damage_crore": 1500, "dates": "Dec 6-12, 2022", "landfall": "Near Mahabalipuram, TN", "impact": "Heavy rainfall, power outages.", "cost": "$180 Million", "deaths": 9, "reason": "Shed much of its convection under high shear but retained enough low-level moisture to dump relentless monsoonal rains on Chennai.", "rainfall": "180 mm", "flood_risk": "Medium (Urban)",
+        {"name": "Cyclone Mandous", "year": 2022, "category": "Cyclonic Storm", "max_wind_kmh": 85, 
+         "dates": "Dec 6-12, 2022", "landfall": "Near Mahabalipuram, TN", 
+         "impact": "Heavy rainfall, severe power outages, and uprooted trees.", 
+         "cost": "$180 Million", "deaths": 9, 
+         "impact_zone": "Mahabalipuram, Chennai, Puducherry, Sriharikota",
+         "reason": "Shed much of its convection under high shear but retained enough low-level moisture to dump relentless monsoonal rains on Chennai.", 
+         "rainfall": "180 mm", "flood_risk": "Medium (Urban)",
          "track": [
              {"lat":9,"lon":85, "wind_speed": 45, "pressure": 1004, "time": "2022-12-06T00:00:00Z"},
              {"lat":10,"lon":84, "wind_speed": 60, "pressure": 998, "time": "2022-12-07T00:00:00Z"},
@@ -796,7 +808,13 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":12,"lon":81.5, "wind_speed": 85, "pressure": 988, "time": "2022-12-09T00:00:00Z"},
              {"lat":12.5,"lon":80.5, "wind_speed": 65, "pressure": 996, "time": "2022-12-10T00:00:00Z"}
          ]},
-        {"name": "Cyclone Nivar", "year": 2020, "category": "Very Severe", "max_wind_kmh": 130, "rainfall_mm": 350, "damage_crore": 3000, "dates": "Nov 23-27, 2020", "landfall": "Near Puducherry", "impact": "200mm+ rainfall, 12 deaths, airport closed.", "cost": "$600 Million", "deaths": 12, "reason": "Formed rapidly in the Bay of Bengal and drove intense rainbands right into water-logged Tamil Nadu exactly during the northeast monsoon.", "rainfall": "350 mm localized", "flood_risk": "High (Reservoir Overflow)",
+        {"name": "Cyclone Nivar", "year": 2020, "category": "Very Severe Cyclonic Storm", "max_wind_kmh": 130, 
+         "dates": "Nov 23-27, 2020", "landfall": "Near Puducherry", 
+         "impact": "200mm+ rainfall, airport closure, widespread flooding.", 
+         "cost": "$600 Million", "deaths": 12, 
+         "impact_zone": "Puducherry, Cuddalore, Marakkanam, Chennai",
+         "reason": "Formed rapidly in the Bay of Bengal and drove intense rainbands right into water-logged Tamil Nadu exactly during the northeast monsoon.", 
+         "rainfall": "350 mm localized", "flood_risk": "High (Reservoir Overflow)",
          "track": [
              {"lat":8.5,"lon":86, "wind_speed": 60, "pressure": 1000, "time": "2020-11-23T00:00:00Z"},
              {"lat":9.5,"lon":84.5, "wind_speed": 90, "pressure": 992, "time": "2020-11-24T00:00:00Z"},

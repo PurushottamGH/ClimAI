@@ -64,17 +64,12 @@ function getTsunamiMagColorArr(mag) {
   return [68, 1, 84];
 }
 
-export default function WorldMap({
-  category = 'earthquake',
-  earthquakes = [],
-  cyclones = [],
-  tsunamis = [],
-  weather = [],
   tempMapData = [],
-  isAnimating = true
+  isAnimating = true,
+  selectedEvent = null,
+  onSelectEvent = () => {}
 }) {
   const [hoverInfo, setHoverInfo] = useState(null);
-  const [selectedEvent, setSelectedEvent] = useState(null);
   const [animTime, setAnimTime] = useState(0);
 
   // Animation Loop for Cyclones
@@ -129,7 +124,7 @@ export default function WorldMap({
     onHover: info => setHoverInfo(info),
     onClick: info => {
       if (info.object) {
-        setSelectedEvent({
+        onSelectEvent({
           ...info.object,
           type: 'earthquake'
         });
@@ -274,7 +269,7 @@ export default function WorldMap({
       if (info.object) {
         const sortedTrack = info.object.trackInfo;
         const latest = sortedTrack && sortedTrack.length > 0 ? sortedTrack[sortedTrack.length - 1] : null;
-        setSelectedEvent({
+        onSelectEvent({
           ...info.object,
           type: 'cyclone',
           time: latest?.time || info.object.dates || info.object.year
@@ -316,7 +311,7 @@ export default function WorldMap({
     onHover: info => setHoverInfo(info),
     onClick: info => {
       if (info.object) {
-        setSelectedEvent({
+        onSelectEvent({
           ...info.object,
           type: 'tsunami'
         });
@@ -448,7 +443,7 @@ export default function WorldMap({
 
       <WikiCard 
         event={selectedEvent} 
-        onClose={() => setSelectedEvent(null)} 
+        onClose={() => onSelectEvent(null)} 
       />
     </div>
   );
