@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Map from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
@@ -64,34 +64,32 @@ function getTsunamiMagColorArr(mag) {
 }
 
 // ═══════════════════════════════════════════════════
-// TEMPERATURE DOT-GRID helpers
-// Smooth multi-stop gradient: blue → cyan → green → yellow → orange → red → darkred
+// TEMPERATURE COLOR — 14-stop smooth gradient
+// deep indigo → blue → cyan → teal → green → lime
+// → yellow-green → yellow → orange → dark-orange → red → dark-red → maroon
 // ═══════════════════════════════════════════════════
 function getTempColor(temp) {
-  // Color stops: [temp, R, G, B]
   const stops = [
-    [-40, 20, 0, 80],      // deep indigo
-    [-25, 40, 20, 170],     // dark blue
-    [-10, 50, 80, 220],     // blue
-    [0, 30, 160, 200],      // cyan
-    [5, 20, 190, 140],      // teal
-    [10, 40, 200, 80],      // green
-    [15, 120, 210, 40],     // lime green
-    [20, 200, 220, 30],     // yellow-green
-    [25, 250, 210, 10],     // yellow
-    [30, 255, 160, 0],      // orange
-    [35, 250, 100, 0],      // dark orange
-    [40, 230, 40, 10],      // red
-    [45, 180, 10, 20],      // dark red
-    [52, 120, 0, 30],       // maroon
+    [-40, 20, 0, 80],
+    [-25, 40, 20, 170],
+    [-10, 50, 80, 220],
+    [0, 30, 160, 200],
+    [5, 20, 190, 140],
+    [10, 40, 200, 80],
+    [15, 120, 210, 40],
+    [20, 200, 220, 30],
+    [25, 250, 210, 10],
+    [30, 255, 160, 0],
+    [35, 250, 100, 0],
+    [40, 230, 40, 10],
+    [45, 180, 10, 20],
+    [52, 120, 0, 30],
   ];
-
   if (temp <= stops[0][0]) return [stops[0][1], stops[0][2], stops[0][3]];
   if (temp >= stops[stops.length - 1][0]) {
     const last = stops[stops.length - 1];
     return [last[1], last[2], last[3]];
   }
-
   for (let i = 0; i < stops.length - 1; i++) {
     if (temp >= stops[i][0] && temp <= stops[i + 1][0]) {
       const t = (temp - stops[i][0]) / (stops[i + 1][0] - stops[i][0]);
@@ -106,11 +104,73 @@ function getTempColor(temp) {
 }
 
 // ═══════════════════════════════════════════════════
-// Temperature Legend Bar Component
+// GLOBAL GRID GENERATOR — 2° resolution (~16,400 pts)
+// Fetches current temperature from Open-Meteo in
+// parallel batches of 1000 lat/lon pairs each
 // ═══════════════════════════════════════════════════
-function TempLegend() {
+function buildGlobalGrid() {
+  const pts = [];
+  for (let lat = -88; lat <= 88; lat += 2) {
+    for (let lon = -180; lon <= 178; lon += 2) {
+      pts.push({ lat, lon });
+    }
+  }
+  return pts;
+}
+
+const BATCH_SIZE = 1000;
+
+async function fetchOpenMeteoTemps(points) {
+  const lats = points.map(p => p.lat).join(',');
+  const lons = points.map(p => p.lon).join(',');
+  const url =
+    `https://api.open-meteo.com/v1/forecast` +
+    `?latitude=${lats}&longitude=${lons}` +
+    `&current=temperature_2m` +
+    `&forecast_days=1&wind_speed_unit=kmh&timezone=auto`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
+  const data = await res.json();
+  const arr = Array.isArray(data) ? data : [data];
+  return arr.map((d, i) => ({
+    lat: points[i].lat,
+    lon: points[i].lon,
+    temp_c: d?.current?.temperature_2m ?? null,
+  })).filter(d => d.temp_c !== null);
+}
+
+async function fetchAllGlobalTemps(onProgress) {
+  const grid = buildGlobalGrid();
+  const results = [];
+  const total = Math.ceil(grid.length / BATCH_SIZE);
+
+  // Fire up to 5 concurrent batches at a time
+  const CONCURRENCY = 5;
+  for (let i = 0; i < grid.length; i += BATCH_SIZE * CONCURRENCY) {
+    const batchGroup = [];
+    for (let j = 0; j < CONCURRENCY && i + j * BATCH_SIZE < grid.length; j++) {
+      const start = i + j * BATCH_SIZE;
+      const slice = grid.slice(start, start + BATCH_SIZE);
+      batchGroup.push(fetchOpenMeteoTemps(slice));
+    }
+    const batchResults = await Promise.allSettled(batchGroup);
+    batchResults.forEach(r => {
+      if (r.status === 'fulfilled') results.push(...r.value);
+    });
+    if (onProgress) {
+      const done = Math.min(i + BATCH_SIZE * CONCURRENCY, grid.length);
+      onProgress(Math.round((done / grid.length) * 100));
+    }
+  }
+  return results;
+}
+
+// ═══════════════════════════════════════════════════
+// Temperature Legend Bar
+// ═══════════════════════════════════════════════════
+function TempLegend({ loadPct }) {
   const ticks = [-30, -20, -10, 0, 10, 20, 30, 40, 50];
-  // Build CSS gradient from our color stops
   const gradientStops = [];
   for (let t = -35; t <= 52; t += 2) {
     const [r, g, b] = getTempColor(t);
@@ -121,12 +181,32 @@ function TempLegend() {
 
   return (
     <div className="temp-legend">
-      <div className="temp-legend-title">Temperature °C</div>
+      <div className="temp-legend-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>Temperature °C</span>
+        {loadPct !== null && loadPct < 100 && (
+          <span style={{ fontSize: 10, color: '#aaa', fontFamily: 'DM Mono, monospace' }}>
+            Loading grid {loadPct}%
+          </span>
+        )}
+      </div>
+      {/* Gradient bar */}
       <div className="temp-legend-bar" style={{ background: gradient }} />
+      {/* Dot swatches */}
       <div className="temp-legend-ticks">
-        {ticks.map(t => (
-          <span key={t} className="temp-legend-tick">{t}°</span>
-        ))}
+        {ticks.map(t => {
+          const [r, g, b] = getTempColor(t);
+          return (
+            <span key={t} className="temp-legend-tick" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <span style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: `rgb(${r},${g},${b})`,
+                boxShadow: `0 0 5px rgb(${r},${g},${b})`,
+                display: 'inline-block'
+              }} />
+              <span style={{ color: `rgb(${r},${g},${b})`, fontSize: 9 }}>{t}°</span>
+            </span>
+          );
+        })}
       </div>
     </div>
   );
@@ -147,18 +227,64 @@ export default function WorldMap({
   const [hoverInfo, setHoverInfo] = useState(null);
   const [animTime, setAnimTime] = useState(0);
 
-  // Animation Loop for Cyclones
+  // ── Global temperature grid state ──────────────────
+  const [globalTempGrid, setGlobalTempGrid] = useState([]);
+  const [gridLoadPct, setGridLoadPct] = useState(null);
+  const gridFetchedRef = useRef(false);
+
+  // Fetch global grid once when temperature tab is first activated
+  useEffect(() => {
+    if (category !== 'temperature') return;
+    if (gridFetchedRef.current) return;
+    gridFetchedRef.current = true;
+
+    setGridLoadPct(0);
+    fetchAllGlobalTemps((pct) => setGridLoadPct(pct))
+      .then(data => {
+        setGlobalTempGrid(data);
+        setGridLoadPct(100);
+      })
+      .catch(err => {
+        console.error('Global grid fetch failed:', err);
+        setGridLoadPct(100);
+      });
+  }, [category]);
+
+  // ── Merge API data + global grid, deduplicate by rounded coord ──
+  const mergedTempData = useMemo(() => {
+    const seen = new Set();
+    const merged = [];
+
+    // API data takes priority (more accurate / historical)
+    const apiData = tempMapData.map(d => ({
+      lat: d.lat,
+      lon: d.lon,
+      temp_c: d.temp_c != null ? d.temp_c : (d.temp_max || 0),
+      label: d.label || null,
+    }));
+
+    apiData.forEach(d => {
+      const key = `${Math.round(d.lat * 2) / 2},${Math.round(d.lon * 2) / 2}`;
+      if (!seen.has(key)) { seen.add(key); merged.push(d); }
+    });
+
+    // Fill gaps with Open-Meteo global grid
+    globalTempGrid.forEach(d => {
+      const key = `${Math.round(d.lat * 2) / 2},${Math.round(d.lon * 2) / 2}`;
+      if (!seen.has(key)) { seen.add(key); merged.push(d); }
+    });
+
+    return merged;
+  }, [tempMapData, globalTempGrid]);
+
+  // ── Animation Loop for Cyclones ───────────────────
   useEffect(() => {
     let animationId;
     const animate = () => {
-      if (isAnimating) {
-        setAnimTime((t) => (t + 0.002) % 1);
-      }
+      if (isAnimating) setAnimTime(t => (t + 0.002) % 1);
       animationId = window.requestAnimationFrame(animate);
     };
-    if (category === 'cyclone') {
-      animate();
-    }
+    if (category === 'cyclone') animate();
     return () => window.cancelAnimationFrame(animationId);
   }, [category, isAnimating]);
 
@@ -171,10 +297,7 @@ export default function WorldMap({
     if (index >= track.length - 1) return [track[track.length - 1].lon, track[track.length - 1].lat];
     const curr = track[index];
     const next = track[index + 1];
-    return [
-      curr.lon + (next.lon - curr.lon) * fraction,
-      curr.lat + (next.lat - curr.lat) * fraction
-    ];
+    return [curr.lon + (next.lon - curr.lon) * fraction, curr.lat + (next.lat - curr.lat) * fraction];
   };
 
   // ═══════════════════════════════
@@ -196,14 +319,7 @@ export default function WorldMap({
     getFillColor: d => [...getMagColorArr(d.magnitude || 0), 140],
     getLineColor: d => getMagColorArr(d.magnitude || 0),
     onHover: info => setHoverInfo(info),
-    onClick: info => {
-      if (info.object) {
-        onSelectEvent({
-          ...info.object,
-          type: 'earthquake'
-        });
-      }
-    },
+    onClick: info => { if (info.object) onSelectEvent({ ...info.object, type: 'earthquake' }); },
     visible: category === 'earthquake'
   }), [earthquakes, category]);
 
@@ -218,13 +334,7 @@ export default function WorldMap({
     const visiblePath = fullPath.slice(0, limit);
     const currentPos = getInterpolatedPos(sortedTrack, animTime);
     visiblePath.push(currentPos);
-    return {
-      name: c.name,
-      path: visiblePath,
-      color: getCycloneCatColorArr(c.category),
-      ...c,
-      track: sortedTrack
-    };
+    return { name: c.name, path: visiblePath, color: getCycloneCatColorArr(c.category), ...c, track: sortedTrack };
   }), [cyclones, animTime]);
 
   const cyclonePathLayer = useMemo(() => new PathLayer({
@@ -234,9 +344,9 @@ export default function WorldMap({
     widthScale: 20,
     widthMinPixels: 2,
     getPath: d => d.path,
-    getColor: d => [...d.color, 180],
-    getWidth: d => 2,
-    onHover: info => setHoverInfo({ ...info, isCycloneTrack: true }),
+    getColor: d => [...d.color, 220],
+    getWidth: 3,
+    onHover: info => setHoverInfo(info),
     visible: category === 'cyclone'
   }), [cycloneTracks, category]);
 
@@ -270,11 +380,7 @@ export default function WorldMap({
   const currentCyclonePos = useMemo(() => {
     return cyclones.filter(c => c.track?.length > 0).map(c => {
       const sortedTrack = c.track[0].time ? [...c.track].sort((a, b) => new Date(a.time) - new Date(b.time)) : c.track;
-      return {
-        ...c,
-        trackInfo: sortedTrack,
-        currentPos: getInterpolatedPos(sortedTrack, animTime)
-      };
+      return { ...c, trackInfo: sortedTrack, currentPos: getInterpolatedPos(sortedTrack, animTime) };
     });
   }, [cyclones, animTime]);
 
@@ -284,38 +390,21 @@ export default function WorldMap({
     id: 'cyclone-eyes',
     data: currentCyclonePos,
     pickable: true,
-    getIcon: d => ({
-      url: CYCLONE_ICON_DATA,
-      width: 100,
-      height: 100,
-      anchorY: 50,
-      anchorX: 50,
-      mask: true
-    }),
+    getIcon: d => ({ url: CYCLONE_ICON_DATA, width: 100, height: 100, anchorY: 50, anchorX: 50, mask: true }),
     sizeScale: 1,
     sizeMinPixels: 35,
     sizeMaxPixels: 70,
     getPosition: d => d.currentPos,
     getSize: d => 60,
     getAngle: d => (animTime * 360 * 15),
-    getColor: d => {
-      const c = getCycloneCatColorArr(d.category);
-      return [c[0], c[1], c[2], 255];
-    },
-    updateTriggers: {
-      getPosition: [animTime],
-      getAngle: [animTime]
-    },
+    getColor: d => { const c = getCycloneCatColorArr(d.category); return [c[0], c[1], c[2], 255]; },
+    updateTriggers: { getPosition: [animTime], getAngle: [animTime] },
     onHover: info => setHoverInfo({ ...info, isCycloneEye: true }),
     onClick: info => {
       if (info.object) {
         const sortedTrack = info.object.trackInfo;
-        const latest = sortedTrack && sortedTrack.length > 0 ? sortedTrack[sortedTrack.length - 1] : null;
-        onSelectEvent({
-          ...info.object,
-          type: 'cyclone',
-          time: latest?.time || info.object.dates || info.object.year
-        });
+        const latest = sortedTrack?.length > 0 ? sortedTrack[sortedTrack.length - 1] : null;
+        onSelectEvent({ ...info.object, type: 'cyclone', time: latest?.time || info.object.dates || info.object.year });
       }
     },
     visible: category === 'cyclone'
@@ -351,45 +440,85 @@ export default function WorldMap({
     getFillColor: d => [...getTsunamiMagColorArr(d.magnitude || 0), 200],
     getLineColor: [255, 255, 255],
     onHover: info => setHoverInfo(info),
-    onClick: info => {
-      if (info.object) {
-        onSelectEvent({
-          ...info.object,
-          type: 'tsunami'
-        });
-      }
-    },
+    onClick: info => { if (info.object) onSelectEvent({ ...info.object, type: 'tsunami' }); },
     visible: category === 'tsunami'
   }), [tsunamis, category]);
 
-  // ═══════════════════════════════════════════════════
-  // LAYER: Temperature DOT-GRID (replaces old heatmap)
-  // Each data point = one colored circle on the map
-  // ═══════════════════════════════════════════════════
-  const tempDotLayer = useMemo(() => new ScatterplotLayer({
-    id: 'temperature-dots',
-    data: category === 'temperature' ? tempMapData : [],
-    pickable: true,
-    opacity: 0.95,
+  // ═══════════════════════════════════════════════════════════════
+  // LAYER: Temperature DOT-GRID  ←  THE FIX IS HERE
+  //
+  // Two-layer approach replicating the reference image:
+  //   Layer 1 — GLOW ring:  larger radius, low opacity, soft bloom
+  //   Layer 2 — CORE dot:   small sharp pixel dot, full brightness
+  //
+  // radiusUnits: 'pixels' → dots stay same size regardless of zoom
+  // radiusMinPixels / radiusMaxPixels control the look precisely
+  // ═══════════════════════════════════════════════════════════════
+  const isTempVisible = category === 'temperature';
+
+  // Glow layer — outer soft halo
+  const tempGlowLayer = useMemo(() => new ScatterplotLayer({
+    id: 'temperature-glow',
+    data: isTempVisible ? mergedTempData : [],
+    pickable: false,           // glow is decorative only, no picking
+    opacity: 1,
     stroked: false,
     filled: true,
-    radiusUnits: 'meters',
-    radiusMinPixels: 2,
-    radiusMaxPixels: 20,
+    radiusUnits: 'pixels',
+    radiusMinPixels: 1,
+    radiusMaxPixels: 11,
     getPosition: d => [d.lon, d.lat],
-    // 2° grid ≈ 222km apart → radius of 110km makes dots nearly touch
-    getRadius: 110000,
+    getRadius: 11,             // outer glow radius in pixels
     getFillColor: d => {
-      const temp = d.temp_c != null ? d.temp_c : (d.temp_max || 0);
+      const temp = d.temp_c ?? d.temp_max ?? 0;
       const [r, g, b] = getTempColor(temp);
-      return [r, g, b, 210];
+      return [r, g, b, 35];   // very transparent — just a soft bloom
+    },
+    updateTriggers: { getFillColor: [mergedTempData.length] }
+  }), [mergedTempData, isTempVisible]);
+
+  // Mid glow layer
+  const tempMidGlowLayer = useMemo(() => new ScatterplotLayer({
+    id: 'temperature-midglow',
+    data: isTempVisible ? mergedTempData : [],
+    pickable: false,
+    opacity: 1,
+    stroked: false,
+    filled: true,
+    radiusUnits: 'pixels',
+    radiusMinPixels: 1,
+    radiusMaxPixels: 7,
+    getPosition: d => [d.lon, d.lat],
+    getRadius: 7,
+    getFillColor: d => {
+      const temp = d.temp_c ?? d.temp_max ?? 0;
+      const [r, g, b] = getTempColor(temp);
+      return [r, g, b, 70];   // semi-transparent mid ring
+    },
+    updateTriggers: { getFillColor: [mergedTempData.length] }
+  }), [mergedTempData, isTempVisible]);
+
+  // Core dot layer — the sharp, bright center dot
+  const tempCoreLayer = useMemo(() => new ScatterplotLayer({
+    id: 'temperature-core',
+    data: isTempVisible ? mergedTempData : [],
+    pickable: true,
+    opacity: 1,
+    stroked: false,
+    filled: true,
+    radiusUnits: 'pixels',
+    radiusMinPixels: 1,
+    radiusMaxPixels: 4,
+    getPosition: d => [d.lon, d.lat],
+    getRadius: 4,              // sharp 4px core — tiny and precise
+    getFillColor: d => {
+      const temp = d.temp_c ?? d.temp_max ?? 0;
+      const [r, g, b] = getTempColor(temp);
+      return [r, g, b, 230];  // near-opaque bright dot
     },
     onHover: info => setHoverInfo(info ? { ...info, isTempDot: true } : null),
-    visible: category === 'temperature',
-    updateTriggers: {
-      getFillColor: [tempMapData]
-    }
-  }), [tempMapData, category]);
+    updateTriggers: { getFillColor: [mergedTempData.length] }
+  }), [mergedTempData, isTempVisible]);
 
   const layers = [
     eqLayer,
@@ -398,26 +527,44 @@ export default function WorldMap({
     cycloneCenterPointLayer,
     cycloneEyeLayer,
     tsunamiLayer,
-    tempDotLayer
+    // Temperature: glow first (bottom), then core on top
+    tempGlowLayer,
+    tempMidGlowLayer,
+    tempCoreLayer,
   ];
 
+  // ═══════════════════════════════
   // Tooltip rendering
+  // ═══════════════════════════════
   function renderTooltip() {
     if (!hoverInfo || !hoverInfo.object || !hoverInfo.picked) return null;
     const { object, x, y } = hoverInfo;
 
-    // Temperature dot tooltip
     if (hoverInfo.isTempDot) {
-      const temp = object.temp_c != null ? object.temp_c : (object.temp_max || 0);
+      const temp = object.temp_c ?? object.temp_max ?? 0;
       const [r, g, b] = getTempColor(temp);
+      const colorStr = `rgb(${r},${g},${b})`;
       return (
-        <div className="deckgl-tooltip temp-tooltip" style={{ left: x, top: y }}>
+        <div className="deckgl-tooltip temp-tooltip" style={{ left: x + 14, top: y - 48 }}>
           <div className="tt-content">
-            <div className="tt-temp-value" style={{ color: `rgb(${r},${g},${b})` }}>
+            {object.label && (
+              <div style={{ fontSize: 11, color: '#ccc', marginBottom: 3, fontFamily: 'DM Mono, monospace', letterSpacing: 1 }}>
+                {object.label}
+              </div>
+            )}
+            <div className="tt-temp-value" style={{ color: colorStr, fontSize: 22, fontWeight: 900, lineHeight: 1.1 }}>
               {temp.toFixed(1)}°C
             </div>
-            <div className="tt-sub">
-              {object.lat.toFixed(1)}°{object.lat >= 0 ? 'N' : 'S'}, {object.lon.toFixed(1)}°{object.lon >= 0 ? 'E' : 'W'}
+            <div className="tt-sub" style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: colorStr, boxShadow: `0 0 6px ${colorStr}`,
+                display: 'inline-block', flexShrink: 0
+              }} />
+              <span>
+                {Math.abs(object.lat).toFixed(1)}°{object.lat >= 0 ? 'N' : 'S'}&nbsp;&nbsp;
+                {Math.abs(object.lon).toFixed(1)}°{object.lon >= 0 ? 'E' : 'W'}
+              </span>
             </div>
           </div>
         </div>
@@ -467,8 +614,9 @@ export default function WorldMap({
         {renderTooltip()}
       </DeckGL>
 
-      {/* Temperature color legend bar */}
-      {category === 'temperature' && <TempLegend />}
+      {category === 'temperature' && (
+        <TempLegend loadPct={gridLoadPct} />
+      )}
 
       <WikiCard
         event={selectedEvent}
