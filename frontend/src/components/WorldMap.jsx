@@ -350,59 +350,60 @@ export default function WorldMap({
     id: 'temperature-heat-native',
     type: 'heatmap',
     paint: {
-      // Weight by actual temperature — cold areas barely visible, hot areas strong
+      // Weight: cold = faint, hot = bright core like city lights
       'heatmap-weight': [
         'interpolate', ['linear'], ['get', 'temp'],
-        -20, 0.05,
-        0, 0.2,
-        15, 0.5,
-        25, 0.8,
-        35, 1.0,
-        50, 1.2
+        -30, 0.05,
+        0, 0.15,
+        10, 0.35,
+        20, 0.60,
+        30, 0.85,
+        40, 1.0,
+        52, 1.3
       ],
-      // Low intensity keeps colours distinct — prevents washout to white
+      // Moderate intensity — keeps bright cores without full bleed
       'heatmap-intensity': [
         'interpolate', ['linear'], ['zoom'],
-        0, 0.8,
-        2, 1.2,
-        4, 1.8,
-        6, 2.5
+        0, 1.2,
+        2, 1.8,
+        4, 2.8,
+        6, 4.0
       ],
-      // Classic met-office temperature ramp:
-      // transparent → navy → blue → cyan → green → yellow → orange → red → white
+      // City-lights style: dark void → deep blue → purple → red → orange → bright yellow/white
       'heatmap-color': [
         'interpolate', ['linear'], ['heatmap-density'],
         0, 'rgba(0,0,0,0)',
-        0.05, 'rgba(0,0,80,0.6)',
-        0.15, 'rgba(0,50,200,0.75)',
-        0.28, 'rgba(0,180,220,0.82)',
-        0.42, 'rgba(0,200,100,0.87)',
-        0.55, 'rgba(220,220,0,0.92)',
-        0.68, 'rgba(255,140,0,0.95)',
-        0.82, 'rgba(220,30,30,0.97)',
+        0.02, 'rgba(10,5,50,0.5)',
+        0.10, 'rgba(40,10,120,0.75)',
+        0.22, 'rgba(120,10,160,0.85)',
+        0.38, 'rgba(200,30,60,0.90)',
+        0.52, 'rgba(240,80,10,0.94)',
+        0.68, 'rgba(255,160,0,0.97)',
+        0.82, 'rgba(255,230,30,1)',
         1.0, 'rgba(255,255,255,1)'
       ],
-      // Tighter radius — points blend on land but don't spill far into ocean
+      // Small tight radius — creates distinct bright cores like city lights
+      // not spreading blobs
       'heatmap-radius': [
         'interpolate', ['linear'], ['zoom'],
-        0, 20,
-        1, 28,
-        2, 38,
-        3, 52,
-        4, 70,
-        5, 95,
-        6, 130
+        0, 14,
+        1, 20,
+        2, 28,
+        3, 38,
+        4, 52,
+        5, 72,
+        6, 100
       ],
-      // Consistent opacity — subtle enough to see map underneath
+      // Strong opacity at low zoom fades slightly when zoomed in
       'heatmap-opacity': [
         'interpolate', ['linear'], ['zoom'],
-        0, 0.82,
-        3, 0.78,
-        5, 0.72,
-        7, 0.60
+        0, 0.88,
+        3, 0.84,
+        5, 0.76,
+        7, 0.65
       ]
     }
-  };
+  };;
 
   const layers = [
     eqLayer,
