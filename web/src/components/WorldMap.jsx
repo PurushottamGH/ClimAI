@@ -64,6 +64,12 @@ function getTsunamiMagColorArr(mag) {
   return [68, 1, 84];
 }
 
+export default function WorldMap({
+  category = 'earthquake',
+  earthquakes = [],
+  cyclones = [],
+  tsunamis = [],
+  weather = [],
   tempMapData = [],
   isAnimating = true,
   selectedEvent = null,
