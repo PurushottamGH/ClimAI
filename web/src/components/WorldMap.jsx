@@ -241,7 +241,7 @@ export default function WorldMap({
     });
   }, [cyclones, animTime]);
 
-  const CYCLONE_ICON_DATA = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="14" fill="white" /><path d="M50,35 C70,35 80,45 85,65" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" /><path d="M50,65 C30,65 20,55 15,35" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" /><path d="M65,50 C65,70 55,80 35,85" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" /><path d="M35,50 C35,30 45,20 65,15" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" /></svg>`;
+  const CYCLONE_ICON_DATA = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="14" fill="white" /><path d="M50,35 C70,35 80,45 85,65" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" /><path d="M50,65 C30,65 20,55 15,35" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" /><path d="M65,50 C65,70 55,80 35,85" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" /><path d="M35,50 C35,30 45,20 65,15" fill="none" stroke="white" stroke-width="10" stroke-linecap="round" /></svg>`);
 
   const cycloneEyeLayer = useMemo(() => new IconLayer({
     id: 'cyclone-eyes',
