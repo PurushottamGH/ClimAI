@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "@vercel/analytics": "^2.0.1",
-    "deck.gl": "^9.2.10"
-  }
-}

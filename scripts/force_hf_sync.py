@@ -20,10 +20,10 @@ def sync_to_hf():
     try:
         print(f"📡 Uploading folder to {REPO_ID}...")
         api.upload_folder(
-            folder_path=".",
+            folder_path="..",
             repo_id=REPO_ID,
             repo_type=REPO_TYPE,
-            ignore_patterns=[".git/*", "node_modules/*", "__pycache__/*", ".venv/*", "*.pyc"]
+            ignore_patterns=[".git/*", "frontend/*", "node_modules/*", "__pycache__/*", ".venv/*", "*.pyc"]
         )
         print("✅ SUCCESS! Your Hugging Face Space is now fully synchronized.")
     except Exception as e:
