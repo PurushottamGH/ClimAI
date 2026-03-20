@@ -73,7 +73,7 @@ export default function WorldMap({
   tempMapData = [],
   isAnimating = true,
   selectedEvent = null,
-  onSelectEvent = () => {}
+  onSelectEvent = () => { }
 }) {
   const [hoverInfo, setHoverInfo] = useState(null);
   const [animTime, setAnimTime] = useState(0);
@@ -147,12 +147,12 @@ export default function WorldMap({
     // Sort track by time to ensure path correctness
     const sortedTrack = c.track[0].time ? [...c.track].sort((a, b) => new Date(a.time) - new Date(b.time)) : c.track;
     const fullPath = sortedTrack.map(p => [p.lon, p.lat]);
-    
+
     // Partially reveal path based on animTime
     const numPoints = fullPath.length;
     const limit = Math.max(2, Math.floor(animTime * (numPoints - 1)) + 1);
     const visiblePath = fullPath.slice(0, limit);
-    
+
     // Append interpolated current position for smoothness
     const currentPos = getInterpolatedPos(sortedTrack, animTime);
     visiblePath.push(currentPos);
@@ -263,8 +263,8 @@ export default function WorldMap({
     getSize: d => 60,
     getAngle: d => (animTime * 360 * 15),
     getColor: d => {
-        const c = getCycloneCatColorArr(d.category);
-        return [c[0], c[1], c[2], 255]; 
+      const c = getCycloneCatColorArr(d.category);
+      return [c[0], c[1], c[2], 255];
     },
     updateTriggers: {
       getPosition: [animTime],
@@ -350,30 +350,56 @@ export default function WorldMap({
     id: 'temperature-heat-native',
     type: 'heatmap',
     paint: {
+      // Weight by temperature value — hotter regions contribute more to density
       'heatmap-weight': [
-        'interpolate',
-        ['linear'],
-        ['get', 'temp'],
-        -30, 0,
-        0, 0.4,
-        25, 0.8,
-        50, 1.2
+        'interpolate', ['linear'], ['get', 'temp'],
+        -30, 0.1,
+        0, 0.3,
+        15, 0.6,
+        25, 0.85,
+        35, 1.0,
+        45, 1.3
       ],
-      'heatmap-intensity': 3,
+      // High intensity so nearby points fully blend into continuous coverage
+      'heatmap-intensity': [
+        'interpolate', ['linear'], ['zoom'],
+        0, 2.5,
+        2, 3.5,
+        4, 5.0,
+        6, 7.0
+      ],
+      // Weather-radar color ramp: transparent → deep blue → purple → red → orange → yellow → white
       'heatmap-color': [
-        'interpolate',
-        ['linear'],
-        ['heatmap-density'],
-        0, 'rgba(13,0,84,0)',
-        0.1, 'rgb(59,46,192)',
-        0.3, 'rgb(136,68,170)',
-        0.5, 'rgb(194,59,94)',
-        0.7, 'rgb(245,138,31)',
-        0.9, 'rgb(250,204,21)',
-        1, 'rgb(252,255,164)'
+        'interpolate', ['linear'], ['heatmap-density'],
+        0, 'rgba(0,0,0,0)',
+        0.04, 'rgba(0,10,60,0.5)',
+        0.12, 'rgba(20,40,160,0.8)',
+        0.25, 'rgba(80,10,130,0.88)',
+        0.40, 'rgba(160,20,50,0.92)',
+        0.55, 'rgba(210,70,10,0.95)',
+        0.70, 'rgba(240,150,0,0.97)',
+        0.85, 'rgba(252,220,20,1)',
+        1.0, 'rgba(255,255,220,1)'
       ],
-      'heatmap-radius': 60,
-      'heatmap-opacity': 0.7
+      // Large zoom-responsive radius — this is the key fix for smooth blending
+      'heatmap-radius': [
+        'interpolate', ['linear'], ['zoom'],
+        0, 55,
+        1, 70,
+        2, 90,
+        3, 110,
+        4, 140,
+        5, 180,
+        6, 240
+      ],
+      // Slight fade at high zoom so individual data points are readable
+      'heatmap-opacity': [
+        'interpolate', ['linear'], ['zoom'],
+        0, 0.92,
+        3, 0.88,
+        5, 0.80,
+        7, 0.65
+      ]
     }
   };
 
@@ -447,9 +473,9 @@ export default function WorldMap({
         {renderTooltip()}
       </DeckGL>
 
-      <WikiCard 
-        event={selectedEvent} 
-        onClose={() => onSelectEvent(null)} 
+      <WikiCard
+        event={selectedEvent}
+        onClose={() => onSelectEvent(null)}
       />
     </div>
   );

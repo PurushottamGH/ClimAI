@@ -35,7 +35,7 @@ app = FastAPI(title="ClimAI API", version="3.5.2-pro")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,  # Must be False when allow_origins=["*"]
+    allow_credentials=False,  # Must be False when allow_origins=['*']
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
@@ -779,13 +779,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
     
     # Base cyclone data (simulating IBTrACS format for tracks)
     cyclones = [
-        {"name": "Cyclone Michaung", "year": 2023, "category": "Severe Cyclonic Storm", "max_wind_kmh": 100, 
-         "dates": "Dec 1-5, 2023", "landfall": "Near Bapatla, AP", 
-         "impact": "Record 240mm rainfall in 24h, catastrophic urban flooding.", 
-         "cost": "$960 Million", "deaths": 17, 
-         "impact_zone": "Chennai, Kancheepuram, Tiruvallur, Nellore, Bapatla",
-         "reason": "Slow-moving system lingered near the coast, pulling intense oceanic moisture into stationary bands over Chennai.", 
-         "rainfall": "450 mm (Total Event)", "flood_risk": "Catastrophic Urban Flooding",
+        {"name": "Cyclone Michaung", "year": 2023, "category": "Severe Cyclonic Storm", "max_wind_kmh": 100, "rainfall_mm": 450, "damage_crore": 8000, "dates": "Dec 1-5, 2023", "landfall": "Near Bapatla, AP", "impact": "Record 240mm rainfall, severe flooding, 17 deaths",
          "track": [
              {"lat":10.5,"lon":83, "wind_speed": 55, "pressure": 1002, "time": "2023-12-01T00:00:00Z"},
              {"lat":11,"lon":82.5, "wind_speed": 75, "pressure": 996, "time": "2023-12-02T00:00:00Z"},
@@ -794,13 +788,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":14,"lon":80.5, "wind_speed": 85, "pressure": 990, "time": "2023-12-05T00:00:00Z"},
              {"lat":15.5,"lon":80.2, "wind_speed": 50, "pressure": 1000, "time": "2023-12-06T00:00:00Z"}
          ]},
-        {"name": "Cyclone Mandous", "year": 2022, "category": "Cyclonic Storm", "max_wind_kmh": 85, 
-         "dates": "Dec 6-12, 2022", "landfall": "Near Mahabalipuram, TN", 
-         "impact": "Heavy rainfall, severe power outages, and uprooted trees.", 
-         "cost": "$180 Million", "deaths": 9, 
-         "impact_zone": "Mahabalipuram, Chennai, Puducherry, Sriharikota",
-         "reason": "Shed much of its convection under high shear but retained enough low-level moisture to dump relentless monsoonal rains on Chennai.", 
-         "rainfall": "180 mm", "flood_risk": "Medium (Urban)",
+        {"name": "Cyclone Mandous", "year": 2022, "category": "Cyclonic Storm", "max_wind_kmh": 85, "rainfall_mm": 180, "damage_crore": 1500, "dates": "Dec 6-12, 2022", "landfall": "Near Mahabalipuram, TN", "impact": "Heavy rainfall, power outages",
          "track": [
              {"lat":9,"lon":85, "wind_speed": 45, "pressure": 1004, "time": "2022-12-06T00:00:00Z"},
              {"lat":10,"lon":84, "wind_speed": 60, "pressure": 998, "time": "2022-12-07T00:00:00Z"},
@@ -808,13 +796,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":12,"lon":81.5, "wind_speed": 85, "pressure": 988, "time": "2022-12-09T00:00:00Z"},
              {"lat":12.5,"lon":80.5, "wind_speed": 65, "pressure": 996, "time": "2022-12-10T00:00:00Z"}
          ]},
-        {"name": "Cyclone Nivar", "year": 2020, "category": "Very Severe Cyclonic Storm", "max_wind_kmh": 130, 
-         "dates": "Nov 23-27, 2020", "landfall": "Near Puducherry", 
-         "impact": "200mm+ rainfall, airport closure, widespread flooding.", 
-         "cost": "$600 Million", "deaths": 12, 
-         "impact_zone": "Puducherry, Cuddalore, Marakkanam, Chennai",
-         "reason": "Formed rapidly in the Bay of Bengal and drove intense rainbands right into water-logged Tamil Nadu exactly during the northeast monsoon.", 
-         "rainfall": "350 mm localized", "flood_risk": "High (Reservoir Overflow)",
+        {"name": "Cyclone Nivar", "year": 2020, "category": "Very Severe", "max_wind_kmh": 130, "rainfall_mm": 350, "damage_crore": 3000, "dates": "Nov 23-27, 2020", "landfall": "Near Puducherry", "impact": "200mm+ rainfall, 12 deaths, airport closed",
          "track": [
              {"lat":8.5,"lon":86, "wind_speed": 60, "pressure": 1000, "time": "2020-11-23T00:00:00Z"},
              {"lat":9.5,"lon":84.5, "wind_speed": 90, "pressure": 992, "time": "2020-11-24T00:00:00Z"},
@@ -822,7 +804,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":11.5,"lon":81.5, "wind_speed": 130, "pressure": 974, "time": "2020-11-26T00:00:00Z"},
              {"lat":12,"lon":80.5, "wind_speed": 95, "pressure": 986, "time": "2020-11-27T00:00:00Z"}
          ]},
-        {"name": "Cyclone Gaja", "year": 2018, "category": "Severe Cyclonic Storm", "max_wind_kmh": 120, "rainfall_mm": 200, "damage_crore": 15000, "dates": "Nov 11-19, 2018", "landfall": "Nagapattinam-Vedaranyam", "impact": "Schools closed, flights disrupted, agricultural devastation.", "cost": "$1.2 Billion", "deaths": 63, "reason": "Compact and highly destructive storm core severely damaged millions of coconut and agricultural trees across the fertile Cauvery Delta.", "rainfall": "200 mm", "flood_risk": "Low (High Wind Damage)",
+        {"name": "Cyclone Gaja", "year": 2018, "category": "Severe Cyclonic Storm", "max_wind_kmh": 120, "rainfall_mm": 200, "damage_crore": 15000, "dates": "Nov 11-19, 2018", "landfall": "Nagapattinam-Vedaranyam", "impact": "Schools closed, flights disrupted",
          "track": [
              {"lat":8,"lon":87, "wind_speed": 55, "pressure": 1002, "time": "2018-11-11T00:00:00Z"},
              {"lat":9,"lon":85.5, "wind_speed": 75, "pressure": 996, "time": "2018-11-13T00:00:00Z"},
@@ -830,7 +812,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":10.5,"lon":82, "wind_speed": 120, "pressure": 978, "time": "2018-11-16T00:00:00Z"},
              {"lat":10.8,"lon":80.5, "wind_speed": 85, "pressure": 992, "time": "2018-11-17T00:00:00Z"}
          ]},
-        {"name": "Cyclone Vardah", "year": 2016, "category": "Very Severe", "max_wind_kmh": 140, "rainfall_mm": 150, "damage_crore": 5000, "dates": "Dec 6-13, 2016", "landfall": "Near Chennai", "impact": "Direct hit, 130km/h winds, power out 3 days.", "cost": "$1.4 Billion", "deaths": 18, "reason": "Passed directly over the Chennai metropolitan area, causing massive structural damage to urban infrastructure and uprooting 100,000+ trees.", "rainfall": "150 mm", "flood_risk": "Moderate",
+        {"name": "Cyclone Vardah", "year": 2016, "category": "Very Severe", "max_wind_kmh": 140, "rainfall_mm": 150, "damage_crore": 5000, "dates": "Dec 6-13, 2016", "landfall": "Near Chennai", "impact": "Direct hit, 130km/h winds, 18 deaths, power out 3 days",
          "track": [
              {"lat":8,"lon":89, "wind_speed": 65, "pressure": 1000, "time": "2016-12-07T00:00:00Z"},
              {"lat":9.5,"lon":87, "wind_speed": 90, "pressure": 990, "time": "2016-12-09T00:00:00Z"},
@@ -839,7 +821,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":13,"lon":81, "wind_speed": 140, "pressure": 970, "time": "2016-12-12T00:00:00Z"},
              {"lat":13.1,"lon":80.3, "wind_speed": 95, "pressure": 988, "time": "2016-12-13T00:00:00Z"}
          ]},
-        {"name": "Cyclone Thane", "year": 2011, "category": "Very Severe", "max_wind_kmh": 140, "rainfall_mm": 120, "damage_crore": 2200, "dates": "Dec 25-31, 2011", "landfall": "Near Cuddalore", "impact": "Heavy rains, 48 deaths total.", "cost": "$400 Million", "deaths": 48, "reason": "The system unexpectedly deepened right before landfall off the Tamil Nadu coast, bringing immense tidal waves to Puducherry and Cuddalore.", "rainfall": "120 mm", "flood_risk": "Moderate",
+        {"name": "Cyclone Thane", "year": 2011, "category": "Very Severe", "max_wind_kmh": 140, "rainfall_mm": 120, "damage_crore": 2200, "dates": "Dec 25-31, 2011", "landfall": "Near Cuddalore", "impact": "Heavy rains, 48 deaths total",
          "track": [
              {"lat":8.5,"lon":88, "wind_speed": 55, "pressure": 1004, "time": "2011-12-25T00:00:00Z"},
              {"lat":9.5,"lon":86, "wind_speed": 75, "pressure": 996, "time": "2011-12-27T00:00:00Z"},
@@ -847,7 +829,7 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
              {"lat":11.5,"lon":82, "wind_speed": 140, "pressure": 972, "time": "2011-12-29T00:00:00Z"},
              {"lat":11.8,"lon":80, "wind_speed": 100, "pressure": 988, "time": "2011-12-30T00:00:00Z"}
          ]},
-        {"name": "Cyclone Nisha", "year": 2008, "category": "Cyclonic Storm", "max_wind_kmh": 75, "rainfall_mm": 500, "damage_crore": 4500, "dates": "Nov 25-27, 2008", "landfall": "Near Karaikal", "impact": "500mm in 48hrs, worst flooding in decades.", "cost": "$800 Million", "deaths": 204, "reason": "Stalled parallel to the coast, serving as a 'firehose' to relentlessly dump half a meter of rain over the coastal plains of Tamil Nadu.", "rainfall": "500 mm extreme", "flood_risk": "Severe Flash Flooding",
+        {"name": "Cyclone Nisha", "year": 2008, "category": "Cyclonic Storm", "max_wind_kmh": 75, "rainfall_mm": 500, "damage_crore": 4500, "dates": "Nov 25-27, 2008", "landfall": "Near Karaikal", "impact": "500mm in 48hrs, worst flooding in decades",
          "track": [
              {"lat":8,"lon":84, "wind_speed": 45, "pressure": 1006, "time": "2008-11-25T00:00:00Z"},
              {"lat":9,"lon":82.5, "wind_speed": 60, "pressure": 998, "time": "2008-11-26T00:00:00Z"},
@@ -871,80 +853,28 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
         "summary": {
             "total": len(cyclones),
             "avg_wind": round(avg_wind) if avg_wind else 0,
-            "max_rainfall": max((c.get("rainfall_mm", 0) for c in cyclones), default=0),
-            "total_damage": sum(c.get("damage_crore", 0) for c in cyclones),
+            "max_rainfall": max((c["rainfall_mm"] for c in cyclones), default=0),
+            "total_damage": sum(c["damage_crore"] for c in cyclones),
             "period": f"{min((c['year'] for c in cyclones), default=0)}-{max((c['year'] for c in cyclones), default=0)}",
         }
     }
 
 
 # ════════════════════════════════
-# /tsunamis — 30 verified historical tsunami events worldwide
+# /tsunamis — Historical Indian Ocean tsunamis
 # ════════════════════════════════
 @app.get("/tsunamis")
 def get_tsunamis():
-    """Historical tsunami events worldwide — 30 verified events from NOAA/NCEI records."""
+    """Historical tsunami events in the Indian Ocean."""
     events = [
-        # ── 2004 Indian Ocean ──
-        {"name": "2004 Indian Ocean Tsunami", "date": "2004-12-26", "origin": "Off west coast of Sumatra, Indonesia", "lat": 3.316, "lon": 95.854, "magnitude": 9.1, "wave_height_m": 30.0, "fatalities": 227898, "description": "Deadliest tsunami in history. A Mw 9.1 megathrust earthquake generated waves up to 30m that struck 14 countries around the Indian Ocean."},
-        # ── 2011 Tohoku ──
-        {"name": "2011 Tōhoku Tsunami", "date": "2011-03-11", "origin": "Tōhoku, Japan", "lat": 38.297, "lon": 142.373, "magnitude": 9.1, "wave_height_m": 40.5, "fatalities": 19759, "description": "A Mw 9.1 earthquake off Tōhoku sent 40m waves inland, triggering the Fukushima Daiichi nuclear meltdown."},
-        # ── 1960 Chile ──
-        {"name": "1960 Valdivia Tsunami", "date": "1960-05-22", "origin": "Valdivia, Chile", "lat": -38.143, "lon": -73.407, "magnitude": 9.5, "wave_height_m": 25.0, "fatalities": 6000, "description": "The most powerful earthquake ever recorded (Mw 9.5) generated a trans-Pacific tsunami reaching Hawaii, Japan, and the Philippines."},
-        # ── 1964 Alaska ──
-        {"name": "1964 Alaska Tsunami", "date": "1964-03-27", "origin": "Prince William Sound, Alaska", "lat": 61.02, "lon": -147.73, "magnitude": 9.2, "wave_height_m": 67.0, "fatalities": 131, "description": "The Good Friday earthquake (Mw 9.2) triggered local tsunamis with run-up heights up to 67m in Valdez Inlet."},
-        # ── 1883 Krakatoa ──
-        {"name": "1883 Krakatoa Tsunami", "date": "1883-08-27", "origin": "Krakatoa, Sunda Strait, Indonesia", "lat": -6.102, "lon": 105.423, "magnitude": 0, "wave_height_m": 37.0, "fatalities": 36417, "description": "The cataclysmic eruption of Krakatoa volcano generated 37m tsunami waves that destroyed coastal towns across the Sunda Strait."},
-        # ── 1755 Lisbon ──
-        {"name": "1755 Lisbon Tsunami", "date": "1755-11-01", "origin": "Atlantic Ocean, SW of Portugal", "lat": 36.0, "lon": -11.0, "magnitude": 8.7, "wave_height_m": 20.0, "fatalities": 60000, "description": "One of history's deadliest earthquakes destroyed Lisbon. Tsunami waves up to 20m struck Portugal, Spain, and Morocco."},
-        # ── 1868 Arica ──
-        {"name": "1868 Arica Tsunami", "date": "1868-08-13", "origin": "Arica, Peru (now Chile)", "lat": -18.5, "lon": -71.0, "magnitude": 9.0, "wave_height_m": 21.0, "fatalities": 25000, "description": "A massive earthquake near Arica generated a destructive trans-Pacific tsunami reaching Hawaii, Japan, and New Zealand."},
-        # ── 1896 Sanriku ──
-        {"name": "1896 Meiji Sanriku Tsunami", "date": "1896-06-15", "origin": "Sanriku Coast, Japan", "lat": 39.5, "lon": 144.0, "magnitude": 7.2, "wave_height_m": 38.2, "fatalities": 22066, "description": "A 'tsunami earthquake' generated disproportionately large 38m waves despite its moderate magnitude, devastating the Sanriku coast."},
-        # ── 1945 Makran ──
-        {"name": "1945 Makran Coast Tsunami", "date": "1945-11-28", "origin": "Makran Coast, Pakistan", "lat": 24.5, "lon": 63.0, "magnitude": 8.1, "wave_height_m": 13.0, "fatalities": 4000, "description": "A Mw 8.1 earthquake in the Makran subduction zone generated a 13m tsunami that struck Balochistan and reached Mumbai."},
-        # ── 1941 Andaman ──
-        {"name": "1941 Andaman Tsunami", "date": "1941-06-26", "origin": "Andaman Islands, India", "lat": 12.5, "lon": 92.5, "magnitude": 7.7, "wave_height_m": 1.5, "fatalities": 5000, "description": "A Mw 7.7 earthquake generated a local tsunami affecting the Andaman Islands and nearby coastal communities."},
-        # ── 2018 Sulawesi ──
-        {"name": "2018 Sulawesi Tsunami", "date": "2018-09-28", "origin": "Palu, Sulawesi, Indonesia", "lat": -0.178, "lon": 119.84, "magnitude": 7.5, "wave_height_m": 11.0, "fatalities": 4340, "description": "A Mw 7.5 strike-slip earthquake triggered an unexpected 11m tsunami that devastated Palu city."},
-        # ── 2018 Anak Krakatau ──
-        {"name": "2018 Anak Krakatau Tsunami", "date": "2018-12-22", "origin": "Anak Krakatau, Sunda Strait, Indonesia", "lat": -6.102, "lon": 105.423, "magnitude": 0, "wave_height_m": 5.0, "fatalities": 437, "description": "A volcanic flank collapse of Anak Krakatau generated an unexpected 5m tsunami with no seismic warning."},
-        # ── 2005 Sumatra Aftershock ──
-        {"name": "2005 Nias–Simeulue Tsunami", "date": "2005-03-28", "origin": "Nias Island, Sumatra, Indonesia", "lat": 2.074, "lon": 97.013, "magnitude": 8.6, "wave_height_m": 3.0, "fatalities": 1313, "description": "A Mw 8.6 aftershock of the 2004 event triggered tsunami warnings across the Indian Ocean."},
-        # ── 1958 Lituya Bay ──
-        {"name": "1958 Lituya Bay Mega-Tsunami", "date": "1958-07-09", "origin": "Lituya Bay, Alaska, USA", "lat": 58.633, "lon": -137.566, "magnitude": 7.8, "wave_height_m": 524.0, "fatalities": 5, "description": "A rockslide-triggered mega-tsunami with the highest wave run-up ever recorded at 524m in the confined bay."},
-        # ── 1976 Moro Gulf ──
-        {"name": "1976 Moro Gulf Tsunami", "date": "1976-08-16", "origin": "Moro Gulf, Mindanao, Philippines", "lat": 6.292, "lon": 124.023, "magnitude": 8.0, "wave_height_m": 9.0, "fatalities": 5000, "description": "A Mw 8.0 earthquake generated a 9m tsunami devastating coastal communities around Moro Gulf."},
-        # ── 1998 Papua New Guinea ──
-        {"name": "1998 Papua New Guinea Tsunami", "date": "1998-07-17", "origin": "Aitape, Papua New Guinea", "lat": -2.96, "lon": 141.926, "magnitude": 7.0, "wave_height_m": 15.0, "fatalities": 2183, "description": "An undersea landslide triggered by a Mw 7.0 earthquake generated a 15m tsunami that destroyed Sissano Lagoon villages."},
-        # ── 2009 Samoa ──
-        {"name": "2009 Samoa Tsunami", "date": "2009-09-29", "origin": "Samoa Islands, South Pacific", "lat": -15.509, "lon": -172.034, "magnitude": 8.1, "wave_height_m": 14.0, "fatalities": 192, "description": "A Mw 8.1 earthquake generated a 14m tsunami that struck Samoa, American Samoa, and Tonga."},
-        # ── 2010 Chile ──
-        {"name": "2010 Chile Tsunami", "date": "2010-02-27", "origin": "Maule, Chile", "lat": -35.846, "lon": -72.719, "magnitude": 8.8, "wave_height_m": 29.0, "fatalities": 525, "description": "A Mw 8.8 earthquake generated a destructive tsunami that devastated coastal Chile and sent waves across the Pacific."},
-        # ── 1933 Sanriku ──
-        {"name": "1933 Shōwa Sanriku Tsunami", "date": "1933-03-02", "origin": "Sanriku Coast, Japan", "lat": 39.22, "lon": 144.62, "magnitude": 8.4, "wave_height_m": 28.7, "fatalities": 3064, "description": "A Mw 8.4 earthquake off Sanriku generated destructive 29m run-up waves, killing over 3,000 people."},
-        # ── 1946 Aleutian ──
-        {"name": "1946 Aleutian Tsunami", "date": "1946-04-01", "origin": "Unimak Island, Aleutians, Alaska", "lat": 52.75, "lon": -163.5, "magnitude": 8.1, "wave_height_m": 35.0, "fatalities": 165, "description": "Generated 35m local waves destroying Scotch Cap Lighthouse and 17m waves that struck Hilo, Hawaii, leading to creation of the Pacific Tsunami Warning Center."},
-        # ── 1952 Kamchatka ──
-        {"name": "1952 Kamchatka Tsunami", "date": "1952-11-04", "origin": "Kamchatka Peninsula, Russia", "lat": 52.76, "lon": 160.06, "magnitude": 9.0, "wave_height_m": 18.0, "fatalities": 2336, "description": "A Mw 9.0 earthquake generated an 18m tsunami that struck Kamchatka, the Kuril Islands, and reached Hawaii."},
-        # ── 1992 Flores ──
-        {"name": "1992 Flores Island Tsunami", "date": "1992-12-12", "origin": "Flores Island, Indonesia", "lat": -8.48, "lon": 121.896, "magnitude": 7.8, "wave_height_m": 26.0, "fatalities": 2500, "description": "A Mw 7.8 earthquake generated a 26m tsunami that devastated Flores Island's north coast."},
-        # ── 1993 Hokkaido ──
-        {"name": "1993 Hokkaido Tsunami", "date": "1993-07-12", "origin": "Okushiri Island, Hokkaido, Japan", "lat": 42.851, "lon": 139.197, "magnitude": 7.8, "wave_height_m": 31.7, "fatalities": 230, "description": "A 31m tsunami struck Okushiri Island within 5 minutes of the earthquake, one of the fastest tsunami impacts recorded."},
-        # ── 2006 Java ──
-        {"name": "2006 Java Tsunami", "date": "2006-07-17", "origin": "South of Java, Indonesia", "lat": -9.222, "lon": 107.345, "magnitude": 7.7, "wave_height_m": 7.0, "fatalities": 668, "description": "A Mw 7.7 'tsunami earthquake' generated 7m waves along Java's southern coast near Pangandaran."},
-        # ── 1929 Grand Banks ──
-        {"name": "1929 Grand Banks Tsunami", "date": "1929-11-18", "origin": "Grand Banks, Newfoundland, Canada", "lat": 44.69, "lon": -56.0, "magnitude": 7.2, "wave_height_m": 13.0, "fatalities": 28, "description": "An earthquake-triggered submarine landslide generated a 13m tsunami that struck the Burin Peninsula of Newfoundland."},
-        # ── 1960 Hilo ──
-        {"name": "1960 Hilo Tsunami", "date": "1960-05-23", "origin": "Trans-Pacific from Chile to Hilo, Hawaii", "lat": 19.73, "lon": -155.09, "magnitude": 9.5, "wave_height_m": 10.7, "fatalities": 61, "description": "The Valdivia earthquake's tsunami crossed the Pacific and struck Hilo, Hawaii 15 hours later with 10m waves."},
-        # ── 2007 Solomon Islands ──
-        {"name": "2007 Solomon Islands Tsunami", "date": "2007-04-01", "origin": "Solomon Islands", "lat": -8.453, "lon": 156.957, "magnitude": 8.1, "wave_height_m": 12.0, "fatalities": 52, "description": "A Mw 8.1 earthquake generated a 12m tsunami devastating low-lying villages in the western Solomon Islands."},
-        # ── 1908 Messina ──
-        {"name": "1908 Messina Tsunami", "date": "1908-12-28", "origin": "Strait of Messina, Italy", "lat": 38.15, "lon": 15.68, "magnitude": 7.1, "wave_height_m": 12.0, "fatalities": 80000, "description": "A devastating earthquake and 12m tsunami destroyed the cities of Messina and Reggio Calabria in southern Italy."},
-        # ── 1692 Port Royal ──
-        {"name": "1692 Port Royal Tsunami", "date": "1692-06-07", "origin": "Port Royal, Jamaica", "lat": 17.93, "lon": -76.84, "magnitude": 7.5, "wave_height_m": 2.0, "fatalities": 2000, "description": "An earthquake liquefied the ground and a tsunami swept over the notorious pirate city of Port Royal, sinking much of it."},
-        # ── 2004 Sri Lanka impact ──
-        {"name": "2004 Sri Lanka Tsunami Impact", "date": "2004-12-26", "origin": "Coast of Sri Lanka", "lat": 6.927, "lon": 79.861, "magnitude": 9.1, "wave_height_m": 11.0, "fatalities": 35322, "description": "The Indian Ocean tsunami struck Sri Lanka's eastern and southern coasts with 11m waves, killing over 35,000 people."},
+        {"name": "Indian Ocean Tsunami", "date": "2004-12-26", "origin": "Off Sumatra", "lat": 3.316, "lon": 95.854, "magnitude": 9.1, "wave_height_m": 30.0, "fatalities": 227898, "description": "Deadliest tsunami. 9.1 earthquake triggered waves across Indian Ocean."},
+        {"name": "Krakatoa Tsunami", "date": "1883-08-27", "origin": "Krakatoa, Sunda Strait", "lat": -6.102, "lon": 105.423, "magnitude": 0, "wave_height_m": 37.0, "fatalities": 36417, "description": "Volcanic eruption generated 37m waves."},
+        {"name": "Makran Coast Tsunami", "date": "1945-11-28", "origin": "Makran Coast, Pakistan", "lat": 24.5, "lon": 63.0, "magnitude": 8.1, "wave_height_m": 13.0, "fatalities": 4000, "description": "Major tsunami from Makran subduction zone."},
+        {"name": "Andaman Tsunami", "date": "1941-06-26", "origin": "Andaman Islands", "lat": 12.5, "lon": 92.5, "magnitude": 7.7, "wave_height_m": 1.5, "fatalities": 5000, "description": "Local tsunami affecting Andaman coastal communities."},
+        {"name": "Sumatra Aftershock", "date": "2005-03-28", "origin": "Off Sumatra", "lat": 2.074, "lon": 97.013, "magnitude": 8.6, "wave_height_m": 3.0, "fatalities": 1313, "description": "Aftershock of 2004 event, tsunami warning across Indian Ocean."},
+        {"name": "Sulawesi Tsunami", "date": "2018-09-28", "origin": "Sulawesi, Indonesia", "lat": -0.178, "lon": 119.84, "magnitude": 7.5, "wave_height_m": 11.0, "fatalities": 4340, "description": "11m waves struck Palu city."},
+        {"name": "Anak Krakatau", "date": "2018-12-22", "origin": "Anak Krakatau volcano", "lat": -6.102, "lon": 105.423, "magnitude": 0, "wave_height_m": 5.0, "fatalities": 437, "description": "Volcanic flank collapse generated unexpected tsunami."},
+        {"name": "Great Assam Earthquake", "date": "1950-08-15", "origin": "Assam-Tibet border", "lat": 28.5, "lon": 96.5, "magnitude": 8.6, "wave_height_m": 2.0, "fatalities": 1526, "description": "Massive flooding and river surges across Northeast India."},
     ]
     total_fatalities = sum(e["fatalities"] for e in events)
     return {
@@ -953,7 +883,7 @@ def get_tsunamis():
             "total": len(events),
             "max_wave": max(e["wave_height_m"] for e in events),
             "total_fatalities": total_fatalities,
-            "period": "1692-2018",
+            "period": "1883-2018",
         }
     }
 
@@ -968,103 +898,92 @@ _temp_map_timestamp = None
 
 @app.get("/temperature-map")
 def get_temperature_map():
-    """High-fidelity temperature grid with land-masking and realistic climate simulation."""
+    """
+    Smooth global temperature heatmap with 2-degree grid.
+    Uses a realistic climate model with seasonal variation.
+    Cached 30 minutes to prevent memory issues.
+    """
     global _temp_map_cache, _temp_map_timestamp
-    import random
-    import math
-    from fastapi.responses import JSONResponse
+    import random, math
 
-    # Return cached version if less than 1 hour old
+    # Return cached version if less than 30 minutes old
     if _temp_map_cache and _temp_map_timestamp:
         age = (datetime.now() - _temp_map_timestamp).total_seconds()
-        if age < 3600:
-            return JSONResponse(
-                content=_temp_map_cache,
-                headers={"Access-Control-Allow-Origin": "*"}
-            )
+        if age < 1800:
+            return _temp_map_cache
 
-    try:
-        # STEP = 8 is a good compromise for Render's memory limits
-        STEP = 8
-        all_points = []
-        month = datetime.now().month
+    month = datetime.now().month
+    all_points = []
+    STEP = 2  # 2-degree grid ~6000 points — smooth & memory safe
 
-        # Try to use globe, but have a fallback ready to prevent 502/crash
-        globe = None
-        try:
-            from global_land_mask import globe
-        except Exception:
-            logger.warning("global_land_mask not available, using mathematical land-approximation")
+    def is_land(lat, lon):
+        """Simple land mask — excludes major ocean areas."""
+        if lat > 74 or lat < -58: return False
+        # Pacific Ocean (exclude)
+        if -60 < lat < 65 and ((lon > 150 and lat > 30) or (lon < -130 and lat > 30)):
+            return True  # keep coastal
+        # Deep South Atlantic
+        if -55 < lat < 5 and -45 < lon < 10: return False
+        # Deep Southern Ocean
+        if lat < -45 and not (-80 < lon < -40): return False
+        # Arctic Ocean
+        if lat > 70 and not (-45 < lon < 45) and not (100 < lon < 140): return False
+        return True
 
-        for lat in range(-60, 75, STEP):
-            peak_lat = 15 * math.sin(math.radians((month - 3) * 30))
-            base_lat_temp = 32 - abs(lat - peak_lat) * 0.55
-            
-            for lon in range(-180, 180, STEP):
-                # Land approximation if globe is missing
-                # Simplistic but visual enough: Continents roughly in these boxes
-                if globe:
-                    is_land = globe.is_land(lat, lon)
-                else:
-                    # Very rough continental check for visual fallback
-                    is_land = (
-                        (6 < lat < 70 and -10 < lon < 150) or   # Eurasia
-                        (-35 < lat < 37 and -20 < lon < 50) or  # Africa
-                        (15 < lat < 72 and -168 < lon < -52) or # N. America
-                        (-56 < lat < 13 and -82 < lon < -34) or # S. America
-                        (-44 < lat < -10 and 112 < lon < 154)   # Australia
-                    )
+    for lat in range(-55, 72, STEP):
+        for lon in range(-180, 180, STEP):
+            if not is_land(lat, lon):
+                continue
 
-                lon_variation = math.cos(math.radians(lon - 100)) * 3
-                noise = random.uniform(-2.5, 2.5)
-                temp = base_lat_temp + lon_variation + noise
-                
-                if is_land:
-                    temp += 4
-                else:
-                    temp -= 2
-                    
-                temp = max(-45, min(55, temp))
+            # Base: latitude cooling from equator
+            base = 28 - abs(lat) * 0.62
 
-                if is_land or (abs(lat) < 40 and random.random() > 0.7):
-                    all_points.append({
-                        "lat": lat,
-                        "lon": lon,
-                        "temp_c": round(temp, 1)
-                    })
+            # Seasonal (opposite hemispheres)
+            if month in [12, 1, 2]:
+                seasonal = -10 * math.sin(math.radians(lat))
+            elif month in [6, 7, 8]:
+                seasonal = 10 * math.sin(math.radians(lat))
+            elif month in [3, 4, 5]:
+                seasonal = 4 * math.sin(math.radians(lat))
+            else:
+                seasonal = -4 * math.sin(math.radians(lat))
 
-        result = {
-            "points": all_points,
-            "count": len(all_points),
-            "timestamp": datetime.now().isoformat(),
-            "status": "synchronized_climate_model" if globe else "simulated_fallback_model"
-        }
+            # Desert heat boost
+            desert = 0
+            if 15 < lat < 35 and -20 < lon < 60: desert = 7   # Sahara + Arabia
+            elif 20 < lat < 40 and 40 < lon < 80: desert = 5   # Iran/Pakistan
+            elif -35 < lat < -15 and 115 < lon < 140: desert = 6  # Australia
+            elif 35 < lat < 50 and 60 < lon < 115: desert = 3   # Central Asia
 
-        # Cache the result
-        _temp_map_cache = result
-        _temp_map_timestamp = datetime.now()
+            # Mountain cooling
+            mtn = 0
+            if 25 < lat < 45 and 65 < lon < 105: mtn = -9   # Himalayas
+            elif -35 < lat < 10 and -80 < lon < -65: mtn = -7  # Andes
+            elif 35 < lat < 50 and -125 < lon < -105: mtn = -5  # Rockies
+            elif 44 < lat < 48 and 5 < lon < 15: mtn = -6   # Alps
+            elif 10 < lat < 20 and 35 < lon < 45: mtn = -4   # Ethiopian highlands
 
-        return JSONResponse(
-            content=result,
-            headers={"Access-Control-Allow-Origin": "*"}
-        )
-    except Exception as e:
-        logger.error(f"Temperature map error: {str(e)}")
-        # Ultimate fallback with minimal points to ensure visuals never "die"
-        fallback_res = {
-            "points": [{"lat": 13, "lon": 80, "temp_c": 30}],
-            "count": 1,
-            "error": str(e)
-        }
-        return JSONResponse(
-            content=fallback_res,
-            headers={"Access-Control-Allow-Origin": "*"}
-        )
+            # Tropical rainforest (Amazon, Congo) — humid, slightly cooler
+            tropical_cool = 0
+            if -15 < lat < 5 and -75 < lon < -45: tropical_cool = -2   # Amazon
+            if -5 < lat < 5 and 15 < lon < 30: tropical_cool = -2      # Congo
 
+            noise = random.uniform(-2.0, 2.0)
+            temp = base + seasonal + desert + mtn + tropical_cool + noise
+            temp = max(-40, min(52, round(temp, 1)))
 
-# ════════════════════════════════════════════════════════════
-# /aqi — Air Quality Index for Chennai (OpenAQ)
-# ════════════════════════════════════════════════════════════
+            all_points.append({"lat": lat, "lon": lon, "temp_c": temp})
+
+    result = {
+        "points": all_points,
+        "count": len(all_points),
+        "timestamp": datetime.now().isoformat(),
+        "grid_step": STEP,
+        "month": month,
+    }
+    _temp_map_cache = result
+    _temp_map_timestamp = datetime.now()
+    return result
 @app.get("/aqi")
 def get_aqi():
     """Fetch real AQI data for Chennai from Open-Meteo air quality API."""
@@ -1916,13 +1835,6 @@ def ask_climai(q: str = "weather today"):
     # ── 1. PLAN ──
     plan = plan_query(query)
     intents = plan["all_intents"]
-
-    # Ensure disaster reports always include all data sources
-    if "disaster" in intents:
-        for extra in ["weather", "cyclone", "earthquake", "tsunami"]:
-            if extra not in intents:
-                intents.append(extra)
-        plan["all_intents"] = intents
     target_date = plan["date"]
     ctx = plan["context"]
     
@@ -2096,55 +2008,6 @@ def ask_climai(q: str = "weather today"):
         "total_time_ms": total_time_ms,
     }
 
-
-# ════════════════════════════════
-# /event-context — Groq Intelligent Summary for Popups
-# ════════════════════════════════
-@app.get("/event-context")
-def get_event_context(type: str, name: str, magnitude: str = "", date: str = ""):
-    import urllib.parse
-    from groq_llm import client
-    
-    prompt = f"Provide a brief, 3-sentence overview of the {name} {type} that occurred around {date}. If it's a generic unnotable event (like a recent magnitude {magnitude} earthquake), explain what a magnitude {magnitude} earthquake typically feels like and its typical impact. Mention casualties or reason if historically known. Keep it concise, factual, and strictly under 4 sentences."
-    
-    try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": "You are a concise disaster intelligence AI. Do not use conversational filler, just provide the facts."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=150,
-            temperature=0.3,
-        )
-        extract = response.choices[0].message.content.strip()
-        
-        img_query = f"{name} {type}" if type != 'earthquake' else f"{name} skyline"
-        search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(img_query)}&utf8=&format=json&origin=*"
-        
-        img_source = None
-        img_url = None
-        try:
-            s_res = requests.get(search_url, timeout=5).json()
-            if s_res.get('query', {}).get('search'):
-                title = s_res['query']['search'][0]['title']
-                sum_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(title)}"
-                sum_res = requests.get(sum_url, timeout=5).json()
-                if 'thumbnail' in sum_res:
-                    img_source = sum_res['thumbnail']['source']
-                img_url = sum_res.get('content_urls', {}).get('desktop', {}).get('page')
-        except Exception:
-            pass
-            
-        return {
-            "title": name.title() if name else f"Magnitude {magnitude} Earthquake",
-            "extract": extract,
-            "thumbnail": {"source": img_source} if img_source else None,
-            "content_urls": {"desktop": {"page": img_url}} if img_url else None
-        }
-    except Exception as e:
-        import traceback
-        return {"error": traceback.format_exc()}
 
 
 if __name__ == "__main__":
