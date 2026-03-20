@@ -89,74 +89,64 @@ export default function WikiCard({ event, onClose }) {
 
     return (
         <div className="wiki-card-overlay" onClick={onClose}>
-            <div className="wiki-glass-card" onClick={e => e.stopPropagation()}>
-                {/* Header matching User's 2nd Screenshot */}
-                <div className="glass-card-header">
-                    <div className="header-event-type">
-                        {event.type.toUpperCase()}
-                        <span className={`status-dot ${event.type}`} />
-                    </div>
-                    <button className="glass-card-close" onClick={onClose} aria-label="Close" />
+            <div className="wiki-timeline-card" onClick={e => e.stopPropagation()}>
+                {/* Header matching EventsTimeline */}
+                <div className="card-header">
+                    <span className="card-id">{event.id || `EVT-${event.year || new Date().getFullYear()}`}</span>
+                    <span className={`card-dot ${event.type}`} />
+                    <button className="timeline-card-close" onClick={onClose}>×</button>
                 </div>
 
-                {/* Hero Image */}
-                <div className="glass-card-image-container">
+                {/* Compact Image */}
+                <div className="card-image-container">
                     {isLoading ? (
-                        <div className="glass-image-placeholder">
-                            <div className="glass-spinner" />
+                        <div className="card-image-placeholder">
+                            <div className="card-spinner" />
                         </div>
                     ) : (
                         <img 
                             src={wikiData?.src || 'https://images.unsplash.com/photo-1594156596782-656c93e4d504?q=80&w=800&auto=format&fit=crop'} 
                             alt={wikiData?.title || basicInfo?.query} 
-                            className="glass-card-image" 
+                            className="card-image" 
                         />
                     )}
                 </div>
 
-                {/* Details */}
-                <div className="glass-card-content">
-                    <div className="detail-section">
-                        <label>EVENT:</label>
-                        <h3>{wikiData?.title || basicInfo?.query}</h3>
+                {/* Vertical Details matching 3rd Image */}
+                <div className="card-details">
+                    <div className="detail-row">
+                        <span className="detail-label">EVENT:</span>
+                        <span className="detail-value">{wikiData?.title || basicInfo?.query}</span>
                     </div>
 
-                    <div className="detail-section">
-                        <label>METRICS:</label>
-                        <div className="popup-metrics-grid">
-                            <div className="p-metric">
-                                <span className="p-label">Intensity:</span>
-                                <span className="p-value">{basicInfo?.detail}</span>
+                    <div className="detail-row">
+                        <span className="detail-label">REGION:</span>
+                        <span className="detail-value">{basicInfo?.region}</span>
+                    </div>
+
+                    <div className="detail-row">
+                        <span className="detail-label">FOCUS:</span>
+                        <span className="detail-value">{basicInfo?.detail}</span>
+                    </div>
+
+                    {/* Enriched Metrics in same style */}
+                    {(event.deaths != null || event.cost || event.rainfall) && (
+                        <div className="detail-row metrics-row">
+                            <span className="detail-label">METRICS:</span>
+                            <div className="compact-metrics-list">
+                                {event.deaths != null && <span className="m-pill deaths">{event.deaths.toLocaleString()} Deaths</span>}
+                                {event.cost && <span className="m-pill cost">{event.cost}</span>}
+                                {event.rainfall && <span className="m-pill rain">{event.rainfall}</span>}
                             </div>
-                            <div className="p-metric">
-                                <span className="p-label">Rainfall:</span>
-                                <span className="p-value">{event.rainfall || 'N/A'}</span>
-                            </div>
-                            <div className="p-metric">
-                                <span className="p-label">Economic Cost:</span>
-                                <span className="p-value">{event.cost || 'N/A'}</span>
-                            </div>
-                            {event.deaths != null && (
-                                <div className="p-metric highlight">
-                                    <span className="p-label">Impact:</span>
-                                    <span className="p-value">{event.deaths.toLocaleString()} souls lost</span>
-                                </div>
-                            )}
                         </div>
-                    </div>
+                    )}
 
-                    <div className="detail-section extract">
-                        <label>SITUATION REPORT:</label>
-                        <p>{isLoading ? 'Retrieving verified records...' : (wikiData?.extract || 'Regional data indicates significant environmental displacement. High atmospheric instability triggered the event.')}</p>
-                    </div>
-
-                    <div className="detail-section">
-                        <label>AFFECTED ZONES:</label>
-                        <p className="impact-zones">{event.impact_zone || event.landfall || event.place || "Regional coastal and inland zones"}</p>
+                    <div className="card-extract">
+                        {isLoading ? 'Retrieving records...' : (wikiData?.extract || 'Regional data indicates environmental displacement. Atmospheric instability triggered the event.')}
                     </div>
 
                     {wikiData?.url && (
-                        <a href={wikiData.url} target="_blank" rel="noreferrer" className="glass-card-link">
+                        <a href={wikiData.url} target="_blank" rel="noreferrer" className="card-link">
                             Read more on Wikipedia ↗
                         </a>
                     )}
