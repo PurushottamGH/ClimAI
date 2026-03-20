@@ -871,8 +871,8 @@ def get_cyclones(year: int = None, name: str = None, min_wind: int = None):
         "summary": {
             "total": len(cyclones),
             "avg_wind": round(avg_wind) if avg_wind else 0,
-            "max_rainfall": max((c["rainfall_mm"] for c in cyclones), default=0),
-            "total_damage": sum(c["damage_crore"] for c in cyclones),
+            "max_rainfall": max((c.get("rainfall_mm", 0) for c in cyclones), default=0),
+            "total_damage": sum(c.get("damage_crore", 0) for c in cyclones),
             "period": f"{min((c['year'] for c in cyclones), default=0)}-{max((c['year'] for c in cyclones), default=0)}",
         }
     }
