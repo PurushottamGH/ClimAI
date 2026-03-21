@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import './XaiPanel.css';
 
+/* ─── Constants ─────────────────────────────────────── */
 const MODEL_NAMES = {
     random_forest: 'Random Forest',
     xgboost: 'XGBoost',
@@ -10,604 +11,712 @@ const MODEL_NAMES = {
 };
 const MODEL_ORDER = ['random_forest', 'xgboost', 'lstm', 'lightgbm'];
 
-const INTENT_LABELS = {
-    weather: 'Weather',
-    prediction: 'Prediction',
-    earthquake: 'Earthquake',
-    cyclone: 'Cyclone',
-    tsunami: 'Tsunami',
-    disaster: 'Disaster',
+const INTENT_COLORS = {
+    weather: { bg: 'rgba(56,189,248,0.12)', color: '#38bdf8', border: 'rgba(56,189,248,0.25)' },
+    prediction: { bg: 'rgba(168,85,247,0.12)', color: '#a855f7', border: 'rgba(168,85,247,0.25)' },
+    earthquake: { bg: 'rgba(251,146,60,0.12)', color: '#fb923c', border: 'rgba(251,146,60,0.25)' },
+    cyclone: { bg: 'rgba(52,211,153,0.12)', color: '#34d399', border: 'rgba(52,211,153,0.25)' },
+    tsunami: { bg: 'rgba(99,102,241,0.12)', color: '#818cf8', border: 'rgba(99,102,241,0.25)' },
+    disaster: { bg: 'rgba(248,113,113,0.12)', color: '#f87171', border: 'rgba(248,113,113,0.25)' },
+    weather_history: { bg: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: 'rgba(251,191,36,0.25)' },
+    aqi: { bg: 'rgba(163,230,53,0.12)', color: '#a3e635', border: 'rgba(163,230,53,0.25)' },
+    flood: { bg: 'rgba(14,165,233,0.12)', color: '#0ea5e9', border: 'rgba(14,165,233,0.25)' },
 };
 
-const SUGGESTION_ICONS = {
-    earthquake: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>,
-    cyclone: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" /></svg>,
-    tsunami: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.6 2 5.2 2 2.5 0 2.5-2 5.2-2 1.3 0 1.9.5 2.5 1" /><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.6 2 5.2 2 2.5 0 2.5-2 5.2-2 1.3 0 1.9.5 2.5 1" /><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.6 2 5.2 2 2.5 0 2.5-2 5.2-2 1.3 0 1.9.5 2.5 1" /></svg>,
-    temperature: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z" /></svg>,
-    weather: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /></svg>,
-    prediction: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>,
-    disaster: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
-};
-
-const SUGGESTION_OPTIONS = [
-    { id: 'earthquake', label: 'Earthquake', desc: 'Seismic events & monitoring' },
-    { id: 'cyclone', label: 'Cyclone', desc: 'Storm tracking & impacts' },
-    { id: 'tsunami', label: 'Tsunami', desc: 'Wave heights & warnings' },
-    { id: 'temperature', label: 'Temperature', desc: 'Heatmaps & climate trends' },
-    { id: 'weather', label: 'Weather', desc: 'Forecasts & conditions' },
+const QUICK_PROMPTS = [
+    { label: 'Current weather', query: 'What is the current weather in Chennai?', icon: '🌤' },
+    { label: 'Cyclone history', query: 'Show me recent cyclones in Bay of Bengal', icon: '🌀' },
+    { label: 'Earthquake risk', query: 'What are recent earthquakes near Chennai?', icon: '📊' },
+    { label: 'Flood risk today', query: 'What is the flood risk in Chennai today?', icon: '🌊' },
+    { label: 'Air quality', query: 'What is the AQI in Chennai right now?', icon: '💨' },
+    { label: 'ML forecast', query: 'Predict the temperature for next 7 days using all ML models', icon: '🤖' },
+    { label: 'Disaster report', query: 'Give me a full disaster and weather report for Chennai', icon: '⚡' },
+    { label: 'Tsunami history', query: 'Tell me about major tsunamis in the Indian Ocean', icon: '🔱' },
 ];
 
-const SOURCE_FILES = {
-    weather: ['api/weather.py', 'services/open_meteo.py'],
-    prediction: ['models/random_forest.py', 'models/xgboost.py', 'models/lstm.py', 'models/lightgbm.py'],
-    earthquake: ['api/earthquakes.py', 'services/usgs.py'],
-    cyclone: ['api/cyclones.py', 'data/bay_of_bengal.json'],
-    tsunami: ['api/tsunamis.py', 'data/indian_ocean.json'],
-    disaster: ['api/main.py', 'services/analysis.py'],
+const SOURCES = {
+    weather: 'Open-Meteo API',
+    earthquake: 'USGS FDSNWS',
+    cyclone: 'NOAA IBTrACS',
+    tsunami: 'NOAA Tsunami DB',
+    prediction: 'ClimAI ML Ensemble',
+    disaster: 'Multi-source',
+    aqi: 'Open-Meteo AQI',
+    flood: 'ClimAI Flood Model',
 };
 
+/* ─── SVG Icons ──────────────────────────────────────── */
+const Icons = {
+    send: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>,
+    close: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>,
+    copy: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>,
+    check: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>,
+    clear: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M19 6l-1 14H6L5 6M9 6V4h6v2" /></svg>,
+    weather: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /></svg>,
+    cyclone: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" /></svg>,
+    earthquake: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>,
+    tsunami: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.6 2 5.2 2 2.5 0 2.5-2 5.2-2 1.3 0 1.9.5 2.5 1" /><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.6 2 5.2 2 2.5 0 2.5-2 5.2-2 1.3 0 1.9.5 2.5 1" /></svg>,
+    prediction: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>,
+    disaster: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4M12 17h.01" /></svg>,
+    bot: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="10" rx="2" /><circle cx="12" cy="5" r="2" /><path d="M12 7v4M8 15h.01M16 15h.01" /></svg>,
+    expand: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></svg>,
+    collapse: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="10" y1="14" x2="3" y2="21" /><line x1="21" y1="3" x2="14" y2="10" /></svg>,
+    at: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="4" /><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" /></svg>,
+};
+
+const IntentIcon = ({ intent }) => Icons[intent] || Icons.bot;
+
+/* ─── Markdown-ish text renderer ─────────────────────── */
+function AnalysisText({ text }) {
+    if (!text) return null;
+    const lines = text.split('\n');
+    return (
+        <div className="xai-analysis-content">
+            {lines.map((line, i) => {
+                if (!line.trim()) return <div key={i} className="xai-line-gap" />;
+                // Bold **text**
+                const parts = line.split(/(\*\*[^*]+\*\*)/g);
+                return (
+                    <p key={i} className="xai-analysis-line">
+                        {parts.map((p, j) =>
+                            p.startsWith('**') && p.endsWith('**')
+                                ? <strong key={j}>{p.slice(2, -2)}</strong>
+                                : p
+                        )}
+                    </p>
+                );
+            })}
+        </div>
+    );
+}
+
+/* ─── Data Grid Card ─────────────────────────────────── */
+function DataGrid({ weather, earthquake, cyclone, tsunami, intents }) {
+    const primary = intents?.[0] || 'weather';
+    if (primary === 'weather' && weather) {
+        const w = weather;
+        return (
+            <div className="xai-data-grid">
+                <div className="xai-data-grid-title">
+                    <span className="xai-grid-icon">{Icons.weather}</span>
+                    Current Conditions — Chennai
+                </div>
+                <div className="xai-grid-cells">
+                    {[
+                        { label: 'Temperature', value: `${w.temperature ?? '—'}°C`, accent: true },
+                        { label: 'Feels Like', value: `${w.feels_like ?? '—'}°C` },
+                        { label: 'Humidity', value: `${w.humidity ?? '—'}%` },
+                        { label: 'Wind', value: `${w.wind_speed ?? '—'} km/h ${w.wind_direction ?? ''}` },
+                        { label: 'Pressure', value: `${w.pressure ?? '—'} hPa` },
+                        { label: 'Cloud Cover', value: `${w.cloud_cover ?? '—'}%` },
+                    ].map((c, i) => (
+                        <div key={i} className={`xai-grid-cell ${c.accent ? 'accent' : ''}`}>
+                            <div className="xai-cell-label">{c.label}</div>
+                            <div className="xai-cell-value">{c.value}</div>
+                        </div>
+                    ))}
+                </div>
+                <div className="xai-grid-source">Source: Open-Meteo API · {new Date().toLocaleTimeString()} IST</div>
+            </div>
+        );
+    }
+    if (primary === 'earthquake' && earthquake) {
+        const s = earthquake.summary || {};
+        return (
+            <div className="xai-data-grid earthquake">
+                <div className="xai-data-grid-title">
+                    <span className="xai-grid-icon">{Icons.earthquake}</span>
+                    Seismic Report — Last 30 Days
+                </div>
+                <div className="xai-grid-cells">
+                    {[
+                        { label: 'Total Events', value: s.total ?? '—', accent: true },
+                        { label: 'Max Magnitude', value: `M${s.max_magnitude ?? '—'}` },
+                        { label: 'Avg Depth', value: `${s.avg_depth ?? '—'} km` },
+                        { label: 'M6+ Events', value: s.m6_plus ?? '—' },
+                        { label: 'Tsunami Alerts', value: s.tsunami_alerts ?? '0' },
+                        { label: 'Threshold', value: 'M4.5+' },
+                    ].map((c, i) => (
+                        <div key={i} className={`xai-grid-cell ${c.accent ? 'accent' : ''}`}>
+                            <div className="xai-cell-label">{c.label}</div>
+                            <div className="xai-cell-value">{c.value}</div>
+                        </div>
+                    ))}
+                </div>
+                <div className="xai-grid-source">Source: USGS FDSNWS · Radius 8000km from Chennai</div>
+            </div>
+        );
+    }
+    if ((primary === 'cyclone') && cyclone) {
+        const top = cyclone.cyclones?.[0] || {};
+        const s = cyclone.summary || {};
+        return (
+            <div className="xai-data-grid cyclone">
+                <div className="xai-data-grid-title">
+                    <span className="xai-grid-icon">{Icons.cyclone}</span>
+                    Cyclone Intelligence — Bay of Bengal
+                </div>
+                <div className="xai-grid-cells">
+                    {[
+                        { label: 'Latest Cyclone', value: top.name ?? '—', accent: true },
+                        { label: 'Year', value: top.year ?? '—' },
+                        { label: 'Max Wind', value: `${top.max_wind_kmh ?? '—'} km/h` },
+                        { label: 'Category', value: top.category ?? '—' },
+                        { label: 'Total in DB', value: s.total ?? '—' },
+                        { label: 'Avg Wind', value: `${s.avg_wind ?? '—'} km/h` },
+                    ].map((c, i) => (
+                        <div key={i} className={`xai-grid-cell ${c.accent ? 'accent' : ''}`}>
+                            <div className="xai-cell-label">{c.label}</div>
+                            <div className="xai-cell-value">{c.value}</div>
+                        </div>
+                    ))}
+                </div>
+                <div className="xai-grid-source">Source: NOAA IBTrACS · {s.period ?? 'Bay of Bengal'}</div>
+            </div>
+        );
+    }
+    if (primary === 'tsunami' && tsunami) {
+        const top = tsunami.events?.[0] || {};
+        const s = tsunami.summary || {};
+        return (
+            <div className="xai-data-grid tsunami">
+                <div className="xai-data-grid-title">
+                    <span className="xai-grid-icon">{Icons.tsunami}</span>
+                    Tsunami Database — Indian Ocean
+                </div>
+                <div className="xai-grid-cells">
+                    {[
+                        { label: 'Notable Event', value: top.name ?? '—', accent: true },
+                        { label: 'Date', value: top.date ?? '—' },
+                        { label: 'Max Wave', value: `${top.wave_height_m ?? '—'}m` },
+                        { label: 'Fatalities', value: top.fatalities?.toLocaleString() ?? '—' },
+                        { label: 'Total Records', value: s.total ?? '—' },
+                        { label: 'Period', value: s.period ?? '—' },
+                    ].map((c, i) => (
+                        <div key={i} className={`xai-grid-cell ${c.accent ? 'accent' : ''}`}>
+                            <div className="xai-cell-label">{c.label}</div>
+                            <div className="xai-cell-value">{c.value}</div>
+                        </div>
+                    ))}
+                </div>
+                <div className="xai-grid-source">Source: NOAA Tsunami DB · {s.total ?? 0} verified events</div>
+            </div>
+        );
+    }
+    return null;
+}
+
+/* ─── ML Model Status ────────────────────────────────── */
+function ModelPanel({ models, modelsStatus }) {
+    if (!models || Object.keys(models).length === 0) return null;
+    return (
+        <div className="xai-model-panel">
+            <div className="xai-model-panel-header">
+                <span className="xai-model-label">ML Ensemble</span>
+                <span className="xai-model-count">{Object.keys(models).length} models</span>
+            </div>
+            <div className="xai-model-list">
+                {MODEL_ORDER.filter(m => models[m]).map(m => {
+                    const info = models[m];
+                    const status = info?.status;
+                    return (
+                        <div key={m} className={`xai-model-item ${status}`}>
+                            <span className={`xai-model-dot ${status}`} />
+                            <span className="xai-model-name">{MODEL_NAMES[m]}</span>
+                            {info?.time_ms && status === 'success' && (
+                                <span className="xai-model-time">{info.time_ms}ms</span>
+                            )}
+                            {status === 'error' && (
+                                <span className="xai-model-err">fallback</span>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+/* ─── Pipeline Steps ─────────────────────────────────── */
+function PipelineSteps({ steps, phase }) {
+    if (!steps || steps.length === 0) return null;
+    return (
+        <div className="xai-pipeline">
+            {steps.map((s, i) => (
+                <div key={i} className={`xai-pipe-step ${s.status}`}>
+                    <span className="xai-pipe-icon">
+                        {s.status === 'done' ? '✓' : s.status === 'error' ? '✗' : '◎'}
+                    </span>
+                    <span className="xai-pipe-detail">{s.detail}</span>
+                </div>
+            ))}
+            {phase === 'working' && (
+                <div className="xai-pipe-step running">
+                    <span className="xai-pipe-icon running">◎</span>
+                    <span className="xai-pipe-detail">Processing with Groq LLaMA 3.3 70B...</span>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/* ─── Typing animation ───────────────────────────────── */
+function TypingIndicator() {
+    return (
+        <div className="xai-typing">
+            <div className="xai-typing-bubble">
+                <span className="xai-typing-dot" />
+                <span className="xai-typing-dot" style={{ animationDelay: '0.15s' }} />
+                <span className="xai-typing-dot" style={{ animationDelay: '0.3s' }} />
+            </div>
+            <span className="xai-typing-label">ClimAI is thinking</span>
+        </div>
+    );
+}
+
+/* ─── Copy button ────────────────────────────────────── */
+function CopyButton({ text }) {
+    const [copied, setCopied] = useState(false);
+    const handleCopy = async () => {
+        await navigator.clipboard.writeText(text).catch(() => { });
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+    };
+    return (
+        <button className="xai-copy-btn" onClick={handleCopy} title="Copy response">
+            {copied ? Icons.check : Icons.copy}
+        </button>
+    );
+}
+
+/* ─── MAIN COMPONENT ─────────────────────────────────── */
 export default function XaiPanel({ open, onClose }) {
     const [query, setQuery] = useState('');
-    const [messages, setMessages] = useState([]); // array of { id, query, phase, result, steps, modelStatus }
-    const [activeId, setActiveId] = useState(null); // id of the currently loading message
+    const [messages, setMessages] = useState([]);
+    const [isWorking, setIsWorking] = useState(false);
+    const [expanded, setExpanded] = useState(false);
+    const [showQuick, setShowQuick] = useState(true);
+    const [showAtMenu, setShowAtMenu] = useState(false);
+    const [atFilter, setAtFilter] = useState('');
+    const [atIndex, setAtIndex] = useState(0);
+    const [selectedCtx, setSelectedCtx] = useState([]);
+    const [charCount, setCharCount] = useState(0);
 
-    // UI Chatbox @ Mentions State
-    const [selectedContexts, setSelectedContexts] = useState([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [suggestionFilter, setSuggestionFilter] = useState('');
-    const [suggestionIndex, setSuggestionIndex] = useState(0);
+    const messagesEndRef = useRef(null);
+    const inputRef = useRef(null);
 
-    const messagesRef = useRef(null);
-
+    /* auto-scroll */
     useEffect(() => {
-        if (messagesRef.current) {
-            messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
-        }
-    }, [messages, activeId]);
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages, isWorking]);
 
-    const reset = () => {
-        setQuery(''); setMessages([]); setActiveId(null);
-        setSelectedContexts([]); setShowSuggestions(false);
+    /* focus input on open */
+    useEffect(() => {
+        if (open) {
+            setTimeout(() => inputRef.current?.focus(), 80);
+        }
+    }, [open]);
+
+    /* hide quick prompts once first message sent */
+    useEffect(() => {
+        if (messages.length > 0) setShowQuick(false);
+    }, [messages.length]);
+
+    if (!open) return null;
+
+    /* helpers */
+    const updateMsg = (id, patch) =>
+        setMessages(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m));
+
+    const AT_OPTIONS = [
+        { id: 'weather', label: 'Weather', desc: 'Current + forecast' },
+        { id: 'cyclone', label: 'Cyclone', desc: 'Bay of Bengal tracking' },
+        { id: 'earthquake', label: 'Earthquake', desc: 'USGS seismic feed' },
+        { id: 'tsunami', label: 'Tsunami', desc: 'Indian Ocean history' },
+        { id: 'prediction', label: 'Prediction', desc: 'ML ensemble forecast' },
+        { id: 'disaster', label: 'Disaster', desc: 'Full multi-hazard report' },
+    ];
+
+    const filteredAt = AT_OPTIONS.filter(o =>
+        o.id.includes(atFilter.toLowerCase()) || o.label.toLowerCase().includes(atFilter.toLowerCase())
+    );
+
+    const selectAtOption = (opt) => {
+        if (!selectedCtx.includes(opt.id)) setSelectedCtx(prev => [...prev, opt.id]);
+        const words = query.split(' ');
+        const cleaned = words.filter(w => !w.startsWith('@')).join(' ').trimStart();
+        setQuery(cleaned);
+        setShowAtMenu(false);
+        inputRef.current?.focus();
     };
 
-    const handleClose = () => { reset(); onClose(); };
+    const submit = async (queryText) => {
+        const text = queryText || query;
+        const ctxPrefix = selectedCtx.map(c => `@${c}`).join(' ');
+        const fullPrompt = [ctxPrefix, text].filter(Boolean).join(' ').trim();
+        if (!fullPrompt || isWorking) return;
 
-    // Helper: is any message still loading?
-    const isWorking = messages.some(m => m.phase === 'working');
-    // Current overall phase for UI (idle if no messages, else check last)
-    const globalPhase = messages.length === 0 ? 'idle' : isWorking ? 'working' : 'done';
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!query.trim() && selectedContexts.length === 0) return;
-        if (isWorking) return; // don't allow while a query is loading
-
-        const contextPrefix = selectedContexts.map(c => `@${c}`).join(' ');
-        const fullPrompt = `${contextPrefix} ${query}`.trim();
-        const msgId = Date.now();
-
-        // Create a new message entry
+        const id = Date.now();
         const newMsg = {
-            id: msgId,
+            id,
             query: fullPrompt,
+            displayQuery: text,
+            contexts: [...selectedCtx],
             phase: 'working',
             result: null,
-            steps: [{ step: 'understand', status: 'running', detail: 'Understanding your question...' }],
-            modelStatus: {},
+            steps: [],
         };
 
         setMessages(prev => [...prev, newMsg]);
-        setActiveId(msgId);
+        setIsWorking(true);
         setQuery('');
-        setShowSuggestions(false);
-        // Don't clear selectedContexts so user can reuse
-
-        const updateMsg = (id, updates) => {
-            setMessages(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
-        };
-
-        await delay(500);
-        updateMsg(msgId, { steps: [{ step: 'understand', status: 'done', detail: 'Query understood' }] });
-        await delay(300);
-        updateMsg(msgId, {
-            steps: [
-                { step: 'understand', status: 'done', detail: 'Query understood' },
-                { step: 'fetch', status: 'running', detail: 'Fetching relevant data...' }
-            ]
-        });
+        setCharCount(0);
+        setShowAtMenu(false);
 
         try {
             const data = await api.askClimAI(fullPrompt);
             if (data.error) {
-                updateMsg(msgId, { phase: 'error', result: { error: data.error } });
-                setActiveId(null);
-                return;
+                updateMsg(id, { phase: 'error', result: { error: data.error } });
+            } else {
+                updateMsg(id, { phase: 'done', result: data, steps: data.steps || [] });
             }
-
-            let newModelStatus = {};
-            if (data.models && Object.keys(data.models).length > 0) {
-                for (const m of MODEL_ORDER) {
-                    if (data.models[m]) {
-                        newModelStatus[m] = data.models[m]?.status === 'success' ? 'done' : 'error';
-                    }
-                }
-            }
-
-            updateMsg(msgId, {
-                phase: 'done',
-                result: data,
-                steps: data.steps || [],
-                modelStatus: newModelStatus,
-            });
-            setActiveId(null);
         } catch (err) {
-            updateMsg(msgId, {
-                phase: 'error',
-                result: { error: err.message || 'Request failed' },
-            });
-            setActiveId(null);
+            updateMsg(id, { phase: 'error', result: { error: err.message || 'Network error' } });
+        } finally {
+            setIsWorking(false);
         }
     };
 
-    if (!open) return null;
+    const handleInputChange = (e) => {
+        const val = e.target.value;
+        setQuery(val);
+        setCharCount(val.length);
+
+        const lastWord = val.split(' ').pop();
+        if (lastWord.startsWith('@')) {
+            setShowAtMenu(true);
+            setAtFilter(lastWord.slice(1));
+            setAtIndex(0);
+        } else {
+            setShowAtMenu(false);
+            setAtFilter('');
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (showAtMenu) {
+            if (e.key === 'ArrowDown') { e.preventDefault(); setAtIndex(i => (i + 1) % filteredAt.length); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); setAtIndex(i => (i - 1 + filteredAt.length) % filteredAt.length); }
+            else if ((e.key === 'Enter' || e.key === 'Tab') && filteredAt[atIndex]) { e.preventDefault(); selectAtOption(filteredAt[atIndex]); }
+            else if (e.key === 'Escape') setShowAtMenu(false);
+            return;
+        }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+        if (e.key === 'Backspace' && query === '' && selectedCtx.length > 0) {
+            setSelectedCtx(prev => prev.slice(0, -1));
+        }
+    };
+
+    const clearHistory = () => { setMessages([]); setShowQuick(true); };
 
     return (
-        <div className="xai-overlay" onClick={handleClose}>
-            <div className="xai-modal" onClick={e => e.stopPropagation()}>
-                <button className="xai-close" onClick={handleClose}>✕</button>
+        <div className="xai-overlay" onClick={onClose}>
+            <div className={`xai-modal ${expanded ? 'expanded' : ''}`} onClick={e => e.stopPropagation()}>
 
-                <div className="xai-messages" ref={messagesRef}>
+                {/* ── HEADER ── */}
+                <div className="xai-header">
+                    <div className="xai-header-left">
+                        <div className="xai-status-dot" />
+                        <span className="xai-header-title">ClimAI</span>
+                        <span className="xai-header-sub">Weather Intelligence · Chennai, India</span>
+                    </div>
+                    <div className="xai-header-right">
+                        {messages.length > 0 && (
+                            <button className="xai-hbtn" onClick={clearHistory} title="Clear history">
+                                {Icons.clear}
+                            </button>
+                        )}
+                        <button className="xai-hbtn" onClick={() => setExpanded(v => !v)} title={expanded ? 'Collapse' : 'Expand'}>
+                            {expanded ? Icons.collapse : Icons.expand}
+                        </button>
+                        <button className="xai-hbtn close" onClick={onClose} title="Close">
+                            {Icons.close}
+                        </button>
+                    </div>
+                </div>
+
+                {/* ── DIVIDER ── */}
+                <div className="xai-divider" />
+
+                {/* ── MESSAGES AREA ── */}
+                <div className="xai-messages">
+
+                    {/* ── EMPTY STATE ── */}
                     {messages.length === 0 && (
-                        <div className="xai-empty-state">
-                            <div className="xai-logo">Hey, ClimAI here.</div>
-                            <p className="xai-subtitle">How can I help you today?</p>
+                        <div className="xai-empty">
+                            <div className="xai-empty-logo">
+                                <div className="xai-logo-ring" />
+                                <div className="xai-logo-text">ClimAI</div>
+                            </div>
+                            <p className="xai-empty-title">Hey, I'm ClimAI.</p>
+                            <p className="xai-empty-sub">
+                                Ask me about weather, cyclones, earthquakes, floods,<br />
+                                or anything climate-related for Chennai & Bay of Bengal.
+                            </p>
+                            <div className="xai-empty-hint">
+                                Type <kbd>@</kbd> to filter by data source
+                            </div>
                         </div>
                     )}
 
+                    {/* ── QUICK PROMPTS ── */}
+                    {showQuick && messages.length === 0 && (
+                        <div className="xai-quick-section">
+                            <div className="xai-quick-label">Try asking</div>
+                            <div className="xai-quick-grid">
+                                {QUICK_PROMPTS.map((p, i) => (
+                                    <button
+                                        key={i}
+                                        className="xai-quick-btn"
+                                        onClick={() => submit(p.query)}
+                                        disabled={isWorking}
+                                    >
+                                        <span className="xai-quick-icon">{p.icon}</span>
+                                        <span className="xai-quick-text">{p.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── MESSAGE BLOCKS ── */}
                     {messages.map((msg) => {
                         const result = msg.result;
                         const phase = msg.phase;
-                        const steps = msg.steps || [];
-                        const modelStatus = msg.modelStatus || {};
-
                         const intents = result?.intents || [];
-                        const targetDate = result?.target_date;
-                        const dateType = result?.date_type;
-                        const historicalWeather = result?.data?.historical_weather;
                         const weather = result?.data?.weather;
                         const earthquake = result?.data?.earthquake;
                         const cyclone = result?.data?.cyclone;
                         const tsunami = result?.data?.tsunami;
-
-                        // Collect source files based on intents
-                        const files = intents.flatMap(i => SOURCE_FILES[i] || []);
-                        if (historicalWeather) files.push('archive-api.open-meteo.com');
-                        const uniqueFiles = [...new Set(files)];
+                        const models = result?.models;
+                        const analysis = result?.analysis || '';
 
                         return (
-                            <div key={msg.id} className="xai-message-block">
-                                {/* User query */}
-                                <div className="xai-user-query">
-                                    <span>→ </span>
-                                    {msg.query.split(' ').map((word, idx) => {
-                                        if (word.startsWith('@')) {
-                                            return <span key={idx} className="xai-query-pill">{word.slice(1)}</span>;
-                                        }
-                                        return <span key={idx}>{word} </span>;
-                                    })}
-                                </div>
+                            <div key={msg.id} className="xai-msg-block">
 
-                                {/* Intent + Date tags */}
-                                {(intents.length > 0 || targetDate) && (
-                                    <div className="xai-intents">
-                                        {intents.map(i => (
-                                            <span key={i} className="xai-intent-tag">
-                                                {SUGGESTION_ICONS[i] && <span className="xai-intent-icon">{SUGGESTION_ICONS[i]}</span>}
-                                                {INTENT_LABELS[i] || i}
+                                {/* USER BUBBLE */}
+                                <div className="xai-user-row">
+                                    <div className="xai-user-bubble">
+                                        {msg.contexts?.map(c => (
+                                            <span key={c} className="xai-ctx-tag" style={INTENT_COLORS[c] ? {
+                                                background: INTENT_COLORS[c].bg,
+                                                color: INTENT_COLORS[c].color,
+                                                borderColor: INTENT_COLORS[c].border,
+                                            } : {}}>
+                                                <span style={{ display: 'flex', alignItems: 'center' }}><IntentIcon intent={c} /></span>
+                                                {c}
                                             </span>
                                         ))}
-                                        {targetDate && (
-                                            <span className="xai-intent-tag xai-date-tag">
-                                                <span className="xai-intent-icon">
-                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                                        {msg.displayQuery || msg.query}
+                                    </div>
+                                </div>
+
+                                {/* INTENT TAGS */}
+                                {intents.length > 0 && (
+                                    <div className="xai-intent-row">
+                                        {intents.slice(0, 5).map(i => {
+                                            const col = INTENT_COLORS[i] || INTENT_COLORS.weather;
+                                            return (
+                                                <span key={i} className="xai-intent-chip" style={{
+                                                    background: col.bg,
+                                                    color: col.color,
+                                                    borderColor: col.border,
+                                                }}>
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                        <IntentIcon intent={i} />
+                                                        {i.replace('_', ' ')}
+                                                    </span>
                                                 </span>
-                                                {targetDate} ({dateType?.replace('_', ' ')})
+                                            );
+                                        })}
+                                        {result?.target_date && (
+                                            <span className="xai-intent-chip date">
+                                                📅 {result.target_date}
+                                            </span>
+                                        )}
+                                        {intents[0] && SOURCES[intents[0]] && (
+                                            <span className="xai-source-chip">
+                                                {SOURCES[intents[0]]}
                                             </span>
                                         )}
                                     </div>
                                 )}
 
-                                {/* Source files */}
-                                <div className="xai-file-list">
-                                    {(uniqueFiles.length > 0 ? uniqueFiles : ['api/main.py']).map(f => (
-                                        <span key={f} className="xai-file-path">{f}</span>
-                                    ))}
-                                </div>
+                                {/* PIPELINE STEPS */}
+                                <PipelineSteps steps={msg.steps} phase={phase} />
 
-                                {/* Steps from backend */}
-                                {steps.map((s, i) => (
-                                    <div key={i} className={`xai-step ${s.status}`}>
-                                        <span className={`xai-step-icon ${s.status}`}>
-                                            {s.status === 'done' ? '✓' : s.status === 'error' ? '✗' : '◎'}
-                                        </span>
-                                        <span>{s.detail}</span>
+                                {/* WORKING STATE */}
+                                {phase === 'working' && <TypingIndicator />}
+
+                                {/* ERROR */}
+                                {phase === 'error' && (
+                                    <div className="xai-error-bubble">
+                                        <span className="xai-err-icon">✗</span>
+                                        <span>{result?.error || 'Something went wrong. Please try again.'}</span>
                                     </div>
-                                ))}
+                                )}
 
-                                {/* Model checklist — only if models actually ran */}
-                                {Object.keys(modelStatus).length > 0 && (
-                                    <div className="xai-task-group">
-                                        <div className="xai-task-header">
-                                            <span className={`xai-dot ${phase === 'done' ? 'dot-green' : 'dot-gray'}`}></span>
-                                            <span className="xai-task-title">
-                                                {phase === 'done' ? 'All models complete' : 'Models working as team'}
-                                            </span>
-                                        </div>
-                                        <div className="xai-task-list">
-                                            {MODEL_ORDER.filter(m => modelStatus[m]).map(m => {
-                                                const s = modelStatus[m];
-                                                return (
-                                                    <div key={m} className={`xai-task ${s === 'done' ? 'done' : s === 'error' ? 'err' : ''}`}>
-                                                        <span className={`xai-checkbox ${s === 'done' ? 'checked' : s === 'error' ? 'err' : ''}`}>
-                                                            {s === 'done' ? '⊠' : '✗'}
-                                                        </span>
-                                                        <span>{MODEL_NAMES[m]}</span>
-                                                        {result?.models?.[m]?.time_ms && s === 'done' && (
-                                                            <span className="xai-time-badge">{result.models[m].time_ms}ms</span>
-                                                        )}
-                                                        {s === 'error' && <span className="xai-time-badge err">failed → fallback</span>}
+                                {/* DONE — RESPONSE */}
+                                {phase === 'done' && result && (
+                                    <div className="xai-response-block">
+
+                                        {/* Data Grid Card */}
+                                        <DataGrid
+                                            weather={weather}
+                                            earthquake={earthquake}
+                                            cyclone={cyclone}
+                                            tsunami={tsunami}
+                                            intents={intents}
+                                        />
+
+                                        {/* ML Models */}
+                                        <ModelPanel models={models} />
+
+                                        {/* Analysis */}
+                                        {analysis && (
+                                            <div className="xai-analysis-block">
+                                                <div className="xai-analysis-header">
+                                                    <div className="xai-analysis-label">
+                                                        <span className="xai-bot-icon">{Icons.bot}</span>
+                                                        Analysis
                                                     </div>
-                                                );
-                                            })}
+                                                    <CopyButton text={analysis} />
+                                                </div>
+                                                <AnalysisText text={analysis} />
+                                            </div>
+                                        )}
+
+                                        {/* Errors / warnings */}
+                                        {result.errors?.length > 0 && (
+                                            <div className="xai-warn-list">
+                                                {result.errors.map((e, i) => (
+                                                    <div key={i} className="xai-warn-item">⚠ {e}</div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Footer */}
+                                        <div className="xai-response-footer">
+                                            <span>Powered by ClimAI · Groq LLaMA 3.3 70B</span>
+                                            <span>{new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST</span>
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Cooking indicator */}
-                                {phase === 'working' && (
-                                    <div className="xai-task-group">
-                                        <div className="xai-task-header">
-                                            <span className="xai-dot dot-green dot-pulse"></span>
-                                            <span className="xai-task-title">Cooking...</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Error */}
-                                {phase === 'error' && result?.error && (
-                                    <div className="xai-error">✗ {result.error}</div>
-                                )}
-
-                                {/* ═══ RESULTS — BERKELEY GRAPHICS TECH DOC ═══ */}
-                                {phase === 'done' && result && (() => {
-                                    const primaryIntent = intents[0] || 'weather';
-                                    const now = new Date();
-                                    const timestamp = now.toISOString().replace('T', ' ').slice(0, 19);
-
-                                    // Build data fields based on intent
-                                    const buildGridData = () => {
-                                        if (primaryIntent === 'cyclone' && cyclone) {
-                                            const c = cyclone.cyclones?.[0] || {};
-                                            return {
-                                                title: `CYCLONE INTELLIGENCE REPORT`,
-                                                subtitle: c.name ? `CYCLONE ${c.name.toUpperCase()}` : 'CYCLONE ANALYSIS',
-                                                classification: 'TROPICAL CYCLONE',
-                                                leftCells: [
-                                                    { label: 'EVENT TYPE', value: 'TROPICAL CYCLONE' },
-                                                    { label: 'BASIN', value: 'BAY OF BENGAL' },
-                                                    { label: 'REGION', value: 'INDIAN OCEAN / SOUTH ASIA' },
-                                                ],
-                                                centerCells: [
-                                                    { label: 'MAX WIND', value: `${c.max_wind_kmh || '—'} KM/H` },
-                                                    { label: 'CATEGORY', value: c.category || '—' },
-                                                    { label: 'YEAR', value: `${c.year || '—'}` },
-                                                ],
-                                                rightCells: [
-                                                    { label: 'DATA SOURCE', value: 'NOAA IBTrACS' },
-                                                    { label: 'ANALYSIS ENGINE', value: 'CLIMAI v2.0' },
-                                                    { label: 'CONFIDENCE', value: 'HIGH' },
-                                                ],
-                                                callouts: [
-                                                    { pos: 'top-left', label: 'WIND PROFILE', value: `Vmax = ${c.max_wind_kmh || '—'} km/h` },
-                                                    { pos: 'top-right', label: 'STORM CATEGORY', value: c.category || 'UNKNOWN' },
-                                                    { pos: 'bottom-left', label: 'LANDFALL REGION', value: 'TAMIL NADU COAST' },
-                                                    { pos: 'bottom-right', label: 'TOTAL CYCLONES', value: `${cyclone.cyclones?.length || 0} EVENTS` },
-                                                ],
-                                                vizType: 'cyclone',
-                                                spectrumLabel: 'CYCLONE INTENSITY SCALE',
-                                                events: cyclone.cyclones || [],
-                                            };
-                                        }
-                                        if (primaryIntent === 'earthquake' && earthquake) {
-                                            const s = earthquake.summary || {};
-                                            const topEvent = earthquake.events?.[0] || {};
-                                            return {
-                                                title: 'SEISMIC ACTIVITY REPORT',
-                                                subtitle: topEvent.place || 'GLOBAL SEISMIC MONITORING',
-                                                classification: 'SEISMIC EVENT',
-                                                leftCells: [
-                                                    { label: 'EVENT TYPE', value: 'TECTONIC EARTHQUAKE' },
-                                                    { label: 'MONITORING', value: 'LAST 30 DAYS' },
-                                                    { label: 'NETWORK', value: 'USGS SEISMOGRAPH' },
-                                                ],
-                                                centerCells: [
-                                                    { label: 'TOTAL EVENTS', value: `${s.total || '—'}` },
-                                                    { label: 'MAX MAGNITUDE', value: `M${s.max_magnitude || '—'}` },
-                                                    { label: 'AVG DEPTH', value: `${s.avg_depth || '—'} KM` },
-                                                ],
-                                                rightCells: [
-                                                    { label: 'DATA SOURCE', value: 'USGS EARTHQUAKE API' },
-                                                    { label: 'ANALYSIS ENGINE', value: 'CLIMAI v2.0' },
-                                                    { label: 'MIN MAGNITUDE', value: 'M4.5+' },
-                                                ],
-                                                callouts: [
-                                                    { pos: 'top-left', label: 'PEAK MAGNITUDE', value: `Mw = ${s.max_magnitude || '—'}` },
-                                                    { pos: 'top-right', label: 'DEPTH RANGE', value: `${s.avg_depth || '—'} KM AVG` },
-                                                    { pos: 'bottom-left', label: 'EVENT COUNT', value: `N = ${s.total || 0}` },
-                                                    { pos: 'bottom-right', label: 'DETECTION THRESHOLD', value: 'M ≥ 4.5' },
-                                                ],
-                                                vizType: 'earthquake',
-                                                spectrumLabel: 'MAGNITUDE INTENSITY',
-                                                events: earthquake.events?.slice(0, 5) || [],
-                                            };
-                                        }
-                                        if (primaryIntent === 'tsunami' && tsunami) {
-                                            const topEvent = tsunami.events?.[0] || {};
-                                            return {
-                                                title: 'TSUNAMI INTELLIGENCE REPORT',
-                                                subtitle: topEvent.name || 'INDIAN OCEAN MONITORING',
-                                                classification: 'TSUNAMI EVENT',
-                                                leftCells: [
-                                                    { label: 'EVENT TYPE', value: 'TSUNAMI / SEISMIC SEA WAVE' },
-                                                    { label: 'BASIN', value: 'INDIAN OCEAN' },
-                                                    { label: 'REGION', value: 'SOUTH / SOUTHEAST ASIA' },
-                                                ],
-                                                centerCells: [
-                                                    { label: 'TRIGGER MAG', value: `M${topEvent.magnitude || '—'}` },
-                                                    { label: 'WAVE HEIGHT', value: `${topEvent.wave_height_m || '—'} M` },
-                                                    { label: 'DATE', value: topEvent.date || '—' },
-                                                ],
-                                                rightCells: [
-                                                    { label: 'DATA SOURCE', value: 'NOAA TSUNAMI DATABASE' },
-                                                    { label: 'ANALYSIS ENGINE', value: 'CLIMAI v2.0' },
-                                                    { label: 'CONFIDENCE', value: 'HIGH' },
-                                                ],
-                                                callouts: [
-                                                    { pos: 'top-left', label: 'WAVE AMPLITUDE', value: `H = ${topEvent.wave_height_m || '—'} m` },
-                                                    { pos: 'top-right', label: 'TRIGGER MAGNITUDE', value: `Mw = ${topEvent.magnitude || '—'}` },
-                                                    { pos: 'bottom-left', label: 'PROPAGATION', value: 'RADIAL — OCEAN BASIN' },
-                                                    { pos: 'bottom-right', label: 'TOTAL EVENTS', value: `${tsunami.events?.length || 0} RECORDS` },
-                                                ],
-                                                vizType: 'tsunami',
-                                                spectrumLabel: 'WAVE INTENSITY',
-                                                events: tsunami.events || [],
-                                            };
-                                        }
-                                        // Default: weather
-                                        const w = weather || {};
-                                        return {
-                                            title: 'METEOROLOGICAL ANALYSIS',
-                                            subtitle: 'CHENNAI WEATHER STATION',
-                                            classification: 'WEATHER DATA',
-                                            leftCells: [
-                                                { label: 'STATION', value: 'CHENNAI, INDIA' },
-                                                { label: 'COORDINATES', value: '13.0827°N, 80.2707°E' },
-                                                { label: 'ELEVATION', value: '6 M ASL' },
-                                            ],
-                                            centerCells: [
-                                                { label: 'TEMPERATURE', value: `${w.temperature || '—'}°C` },
-                                                { label: 'HUMIDITY', value: `${w.humidity || '—'}%` },
-                                                { label: 'WIND SPEED', value: `${w.wind_speed || '—'} KM/H` },
-                                            ],
-                                            rightCells: [
-                                                { label: 'DATA SOURCE', value: 'OPEN-METEO API' },
-                                                { label: 'PRESSURE', value: `${w.pressure || '—'} HPA` },
-                                                { label: 'CLOUD COVER', value: `${w.cloud_cover || '—'}%` },
-                                            ],
-                                            callouts: [
-                                                { pos: 'top-left', label: 'FEELS LIKE', value: `T = ${w.feels_like || '—'}°C` },
-                                                { pos: 'top-right', label: 'PRESSURE', value: `P = ${w.pressure || '—'} hPa` },
-                                                { pos: 'bottom-left', label: 'WIND DIR', value: `θ = ${w.wind_direction || '—'}°` },
-                                                { pos: 'bottom-right', label: 'VISIBILITY', value: 'STANDARD' },
-                                            ],
-                                            vizType: 'weather',
-                                            spectrumLabel: 'TEMPERATURE SCALE',
-                                            events: [],
-                                        };
-                                    };
-
-                                    const grid = buildGridData();
-
-                                    // Only show structured doc layout for specific data intents
-                                    const showStructuredDoc = ['cyclone', 'earthquake', 'tsunami', 'weather', 'disaster'].includes(primaryIntent) && (cyclone || earthquake || tsunami || weather);
-
-                                    return (
-                                        <div className="tech-doc">
-                                            {/* ── HEADER — only show for structured data queries ── */}
-                                            {showStructuredDoc && (
-                                                <div className="tech-header">
-                                                    <span className="tech-header-left">CLIMAI INTELLIGENCE</span>
-                                                    <span className="tech-header-right">SERIAL {Math.floor(Math.random() * 9000 + 1000)}-{primaryIntent.toUpperCase()}</span>
-                                                </div>
-                                            )}
-
-                                            {/* ── TITLE BLOCK — only for structured queries ── */}
-                                            {showStructuredDoc && <div className="tech-title-block">
-                                                <div className="tech-title-left">
-                                                    <div className="tech-title-big">{grid.subtitle}</div>
-                                                </div>
-                                                <div className="tech-title-right">
-                                                    <div>{grid.classification}</div>
-                                                    <div>CLASSIFICATION: ANALYSIS REPORT</div>
-                                                </div>
-                                            </div>}
-
-                                            {/* ── 3-COLUMN DATA GRID — only for structured queries ── */}
-                                            {showStructuredDoc && <div className="tech-grid">
-                                                <div className="tech-col">
-                                                    {grid.leftCells.map((c, i) => (
-                                                        <div key={i} className="tech-cell">
-                                                            <div className="tech-cell-label">{c.label}</div>
-                                                            <div className="tech-cell-value">{c.value}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <div className="tech-col">
-                                                    {grid.centerCells.map((c, i) => (
-                                                        <div key={i} className="tech-cell">
-                                                            <div className="tech-cell-label">{c.label}</div>
-                                                            <div className="tech-cell-value">{c.value}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <div className="tech-col">
-                                                    {grid.rightCells.map((c, i) => (
-                                                        <div key={i} className="tech-cell">
-                                                            <div className="tech-cell-label">{c.label}</div>
-                                                            <div className="tech-cell-value">{c.value}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>}
-
-                                            {/* (Viewport removed for clean aerospace layout) */}
-
-                                            {/* (Events list removed for strict tabular aerospace layout) */}
-
-                                            {/* ── ANALYSIS TEXT ── */}
-                                            <div className="tech-analysis">
-                                                <div className="tech-analysis-title">ANALYSIS</div>
-                                                <div className="tech-analysis-body">{result.analysis}</div>
-                                            </div>
-
-                                            {/* (Spectrum bar removed) */}
-
-                                            {/* ── FOOTER ── */}
-                                            <div className="tech-footer">
-                                                <span>POWERED BY CLIMAI</span>
-                                                <span>{timestamp} UTC</span>
-                                            </div>
-
-                                            {/* ── ERRORS ── */}
-                                            {result.errors?.length > 0 && (
-                                                <div className="tech-errors">
-                                                    {result.errors.map((e, i) => (
-                                                        <div key={i} className="tech-error-line">⚠ {e}</div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })()}
                             </div>
                         );
                     })}
+
+                    {/* auto-scroll anchor */}
+                    <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input */}
-                <div className="xai-input-area">
-                    <form className="xai-input-wrapper" onSubmit={handleSubmit} onClick={() => document.getElementById('xai-main-input').focus()}>
-                        <span className="xai-input-arrow">→</span>
+                {/* ── DIVIDER ── */}
+                <div className="xai-divider" />
 
-                        <div className="xai-input-flex">
-                            {selectedContexts.map(ctx => (
-                                <div key={ctx} className="xai-context-pill">
-                                    {ctx}
-                                    <button
-                                        type="button"
-                                        className="xai-context-remove"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setSelectedContexts(prev => prev.filter(c => c !== ctx));
-                                        }}
-                                    >
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-                                    </button>
-                                </div>
-                            ))}
+                {/* ── INPUT AREA ── */}
+                <div className="xai-input-zone">
 
-                            <input
-                                id="xai-main-input"
-                                type="text"
-                                className="xai-input"
-                                placeholder={globalPhase === 'idle' && selectedContexts.length === 0 ? 'Ask ClimAI' : globalPhase !== 'working' && selectedContexts.length === 0 ? 'Ask a follow-up...' : ''}
-                                value={query}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    setQuery(val);
-
-                                    const lastWord = val.split(' ').pop();
-                                    if (lastWord.startsWith('@')) {
-                                        setShowSuggestions(true);
-                                        setSuggestionFilter(lastWord.slice(1).toLowerCase());
-                                        setSuggestionIndex(0);
-                                    } else {
-                                        setShowSuggestions(false);
-                                    }
-                                }}
-                                onKeyDown={(e) => {
-                                    if (!showSuggestions) {
-                                        if (e.key === 'Backspace' && query === '' && selectedContexts.length > 0) {
-                                            setSelectedContexts(prev => prev.slice(0, -1));
-                                        }
-                                        return;
-                                    }
-
-                                    const filteredOpts = SUGGESTION_OPTIONS.filter(o => o.id.includes(suggestionFilter) || o.label.toLowerCase().includes(suggestionFilter));
-
-                                    if (e.key === 'ArrowDown') {
-                                        e.preventDefault();
-                                        setSuggestionIndex(prev => (prev + 1) % filteredOpts.length);
-                                    } else if (e.key === 'ArrowUp') {
-                                        e.preventDefault();
-                                        setSuggestionIndex(prev => (prev - 1 + filteredOpts.length) % filteredOpts.length);
-                                    } else if (e.key === 'Enter' || e.key === 'Tab') {
-                                        e.preventDefault();
-                                        if (filteredOpts[suggestionIndex]) {
-                                            setSelectedContexts(prev => [...prev, filteredOpts[suggestionIndex].id]);
-                                            const newQuery = query.split(' ').slice(0, -1).join(' ') + ' ';
-                                            setQuery(newQuery.trimStart());
-                                            setShowSuggestions(false);
-                                        }
-                                    } else if (e.key === 'Escape') {
-                                        setShowSuggestions(false);
-                                    }
-                                }}
-                                disabled={isWorking}
-                                autoFocus
-                                autoComplete="off"
-                            />
+                    {/* Context chips row */}
+                    {selectedCtx.length > 0 && (
+                        <div className="xai-ctx-row">
+                            {selectedCtx.map(c => {
+                                const col = INTENT_COLORS[c] || {};
+                                return (
+                                    <div key={c} className="xai-ctx-chip" style={{
+                                        background: col.bg,
+                                        borderColor: col.border,
+                                        color: col.color,
+                                    }}>
+                                        <span>{c}</span>
+                                        <button
+                                            className="xai-ctx-remove"
+                                            onClick={() => setSelectedCtx(prev => prev.filter(x => x !== c))}
+                                        >{Icons.close}</button>
+                                    </div>
+                                );
+                            })}
                         </div>
+                    )}
 
-                        {showSuggestions && (
-                            <div className="xai-suggestions-dropdown">
-                                <div className="xai-suggestions-header">Suggestions</div>
-                                {SUGGESTION_OPTIONS.filter(o => o.id.includes(suggestionFilter) || o.label.toLowerCase().includes(suggestionFilter)).map((opt, i) => (
+                    {/* @ mention dropdown */}
+                    {showAtMenu && filteredAt.length > 0 && (
+                        <div className="xai-at-menu">
+                            <div className="xai-at-header">
+                                <span>{Icons.at}</span> Data sources
+                            </div>
+                            {filteredAt.map((opt, i) => {
+                                const col = INTENT_COLORS[opt.id] || {};
+                                return (
                                     <div
                                         key={opt.id}
-                                        className={`xai-suggestion-item ${i === suggestionIndex ? 'active' : ''}`}
-                                        onClick={() => {
-                                            setSelectedContexts(prev => [...prev, opt.id]);
-                                            const newQuery = query.split(' ').slice(0, -1).join(' ') + ' ';
-                                            setQuery(newQuery.trimStart());
-                                            setShowSuggestions(false);
-                                            document.getElementById('xai-main-input').focus();
-                                        }}
-                                        onMouseEnter={() => setSuggestionIndex(i)}
+                                        className={`xai-at-item ${i === atIndex ? 'active' : ''}`}
+                                        onClick={() => selectAtOption(opt)}
+                                        onMouseEnter={() => setAtIndex(i)}
                                     >
-                                        <div className="xs-item-content">
-                                            <div className="xs-icon">{SUGGESTION_ICONS[opt.id]}</div>
-                                            <div className="xs-text">
-                                                <div className="xs-label">{opt.label}</div>
-                                                {opt.desc && <div className="xs-desc">{opt.desc}</div>}
-                                            </div>
+                                        <span className="xai-at-icon" style={{ color: col.color }}>
+                                            <IntentIcon intent={opt.id} />
+                                        </span>
+                                        <div className="xai-at-text">
+                                            <span className="xai-at-label">{opt.label}</span>
+                                            <span className="xai-at-desc">{opt.desc}</span>
                                         </div>
+                                        {i === atIndex && <span className="xai-at-enter">↵</span>}
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </form>
-                    <div className="xai-disclaimer">ClimAI can make mistakes.</div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Input box */}
+                    <div className={`xai-input-box ${isWorking ? 'loading' : ''}`}>
+                        <textarea
+                            ref={inputRef}
+                            className="xai-textarea"
+                            placeholder={isWorking ? 'ClimAI is thinking...' : 'Ask anything about weather, disasters, or climate...'}
+                            value={query}
+                            onChange={handleInputChange}
+                            onKeyDown={handleKeyDown}
+                            disabled={isWorking}
+                            rows={1}
+                            style={{ resize: 'none' }}
+                            onInput={e => {
+                                e.target.style.height = 'auto';
+                                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                            }}
+                        />
+                        <div className="xai-input-actions">
+                            <button
+                                className="xai-at-btn"
+                                onClick={() => { setQuery(q => q + '@'); inputRef.current?.focus(); }}
+                                title="Mention a data source"
+                            >
+                                {Icons.at}
+                            </button>
+                            <button
+                                className={`xai-send-btn ${query.trim() || selectedCtx.length ? 'active' : ''}`}
+                                onClick={() => submit()}
+                                disabled={isWorking || (!query.trim() && !selectedCtx.length)}
+                                title="Send (Enter)"
+                            >
+                                {isWorking ? <span className="xai-send-spinner" /> : Icons.send}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="xai-footer-row">
+                        <span className="xai-disclaimer">ClimAI can make mistakes · Data from Open-Meteo, USGS, NOAA</span>
+                        {charCount > 0 && <span className="xai-charcount">{charCount}/500</span>}
+                    </div>
                 </div>
             </div>
         </div>
