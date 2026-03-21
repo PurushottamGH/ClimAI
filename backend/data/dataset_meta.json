@@ -1,0 +1,111 @@
+{
+  "built_at": "2026-03-21T19:08:08.479995",
+  "location": "Chennai, India (13.08N, 80.27E)",
+  "data_sources": [
+    "Open-Meteo Archive",
+    "USGS Earthquake API",
+    "Open-Meteo AQI"
+  ],
+  "weather": {
+    "period": "2021-03-15 to 2026-03-14",
+    "total_days": 1826,
+    "avg_temp_max_c": 31.9,
+    "max_temp_ever_c": 41.0,
+    "min_temp_ever_c": 24.0,
+    "avg_daily_precip_mm": 4.44,
+    "max_single_day_rain": 255.8,
+    "avg_wind_kmh": 18.1,
+    "max_wind_kmh": 53.1,
+    "monthly_total_precip_mm": {
+      "1": 230.4,
+      "2": 19.2,
+      "3": 71.4,
+      "4": 73.8,
+      "5": 520.2,
+      "6": 343.6,
+      "7": 620.1,
+      "8": 866.0,
+      "9": 745.7,
+      "10": 1257.4,
+      "11": 2133.6,
+      "12": 1231.7
+    },
+    "yearly_summary": {
+      "2021": {
+        "avg_temp_max": 32.0,
+        "total_precip_mm": 1626.3
+      },
+      "2022": {
+        "avg_temp_max": 31.3,
+        "total_precip_mm": 1441.4
+      },
+      "2023": {
+        "avg_temp_max": 32.0,
+        "total_precip_mm": 1625.2
+      },
+      "2024": {
+        "avg_temp_max": 32.2,
+        "total_precip_mm": 1610.5
+      },
+      "2025": {
+        "avg_temp_max": 32.4,
+        "total_precip_mm": 1699.8
+      },
+      "2026": {
+        "avg_temp_max": 29.2,
+        "total_precip_mm": 109.9
+      }
+    },
+    "peak_monsoon_months": "June-November (Northeast monsoon dominant Oct-Dec)",
+    "heatwave_season": "March-June (temps frequently exceed 38C)",
+    "cyclone_peak_season": "October-December (Bay of Bengal cyclogenesis)"
+  },
+  "earthquakes": {
+    "total_events_5yr": 23,
+    "avg_magnitude": 4.58,
+    "max_magnitude": 5.1,
+    "region": "Bay of Bengal / South India (~1000km radius from Chennai)",
+    "risk_note": "Chennai on stable Deccan shield. Major risk from Bay of Bengal subduction zone."
+  },
+  "aqi": {
+    "total_days": 366,
+    "avg_aqi": 49.2,
+    "max_aqi": 96.6,
+    "context": "Typically moderate (50-100). Winter spikes (Nov-Jan) from crop burning and low wind."
+  },
+  "notable_events": [
+    {
+      "event": "Cyclone Michaung",
+      "date": "December 2023",
+      "impact": "Category 1 landfall, severe Chennai flooding, 2500mm rain in 48hr"
+    },
+    {
+      "event": "2015 Chennai Floods",
+      "date": "November-December 2015",
+      "impact": "Worst flooding in 100 years, 500+ deaths, $3B damage"
+    },
+    {
+      "event": "2004 Indian Ocean Tsunami",
+      "date": "December 26 2004",
+      "impact": "Mag 9.1 Sumatra earthquake, Chennai coastline devastated"
+    },
+    {
+      "event": "Cyclone Vardah",
+      "date": "December 2016",
+      "impact": "Direct hit Chennai, 100+ km/h winds, widespread damage"
+    },
+    {
+      "event": "Cyclone Nivar",
+      "date": "November 2020",
+      "impact": "Very severe cyclone, landfall near Puducherry, heavy Chennai rain"
+    }
+  ],
+  "climate_patterns": {
+    "type": "Tropical wet and dry (Koppen Aw)",
+    "annual_rainfall_mm": "~1400mm avg, 60% from Northeast monsoon Oct-Dec",
+    "sea_surface_temp": "Bay of Bengal 28-30C peak Jun-Oct (cyclone fuel)",
+    "urban_heat_island": "UHI adds +1.5 to 2.5C vs rural",
+    "warming_trend": "Max temps rising ~0.3C per decade since 1980",
+    "flood_risk_zones": "Adyar, Cooum, Buckingham Canal flood plains highest risk"
+  }
+}
