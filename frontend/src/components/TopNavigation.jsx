@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
+import logoImg from '../assets/logo.png';
 import './TopNavigation.css';
 
 const NAV_ITEMS = [
@@ -53,7 +54,7 @@ export default function TopNavigation({ activeView, onChangeView }) {
     return (
         <div className="top-nav-wrapper">
             <img 
-                src="/logo.png" 
+                src={logoImg} 
                 alt="ClimAI"
                 className="top-nav-logo"
                 onClick={() => onChangeView('overview')}
