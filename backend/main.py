@@ -41,6 +41,20 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+
+@app.get("/debug-paths")
+def debug_paths():
+    import os as _os
+    cwd = _os.getcwd()
+    files_in_cwd = _os.listdir(cwd)
+    return {
+        "cwd": cwd,
+        "files_in_cwd": files_in_cwd,
+        "weather_history_exists": _os.path.exists("weather_history.json"),
+        "data_folder_exists": _os.path.exists("data"),
+        "data_files": _os.listdir("data") if _os.path.exists("data") else [],
+    }
+
 @app.get("/ping")
 def ping():
     return {"status": "ok", "time": datetime.now().isoformat(), "version": "3.5-pro"}
