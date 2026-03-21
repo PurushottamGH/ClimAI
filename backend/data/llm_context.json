@@ -1,5 +1,5 @@
 {
-  "built_at": "2026-03-21T19:41:52.965783",
+  "built_at": "2026-03-21T19:42:53.519462",
   "location": "Chennai, India (13.08N, 80.27E)",
   "data_sources": [
     "Open-Meteo Archive",
@@ -68,9 +68,9 @@
     "risk_note": "Chennai on stable Deccan shield. Major risk from Bay of Bengal subduction zone."
   },
   "aqi": {
-    "total_days": 0,
-    "avg_aqi": null,
-    "max_aqi": null,
+    "total_days": 366,
+    "avg_aqi": 49.2,
+    "max_aqi": 96.6,
     "context": "Typically moderate (50-100). Winter spikes (Nov-Jan) from crop burning and low wind."
   },
   "notable_events": [
