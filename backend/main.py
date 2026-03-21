@@ -240,37 +240,82 @@ def get_historical(years: int = 5):
 # ════════════════════════════════════════════════════════════
 
 def fetch_training_data(days: int = 90):
-    """Fetch recent temperature data for ML training."""
-    end_date = datetime.now() - timedelta(days=7)  # Archive API lags ~5-7 days
+    """
+    Load temperature data for ML training.
+    Priority: 1) saved dataset (data/weather_history.json) for full 5yr history
+              2) live API fallback if file not found
+    Using saved data means models train on 5 years instead of 90 days —
+    dramatically improves prediction accuracy.
+    """
+    import os as _os
+    import json as _json
+    dataset_path = "data/weather_history.json"
+
+    # ── Try loading from saved dataset first ──────────────────────
+    if _os.path.exists(dataset_path):
+        try:
+            with open(dataset_path) as f:
+                saved = _json.load(f)
+            daily = saved.get("daily", {})
+            temps_max = [t for t in daily.get("temperature_2m_max", []) if t is not None]
+            temps_min = [t for t in daily.get("temperature_2m_min", []) if t is not None]
+            precip    = [p for p in daily.get("precipitation_sum",  []) if p is not None]
+            wind      = [w for w in daily.get("wind_speed_10m_max", []) if w is not None]
+
+            if len(temps_max) >= 14:
+                period = saved.get("period", "")
+                try:
+                    end_str  = period.split(" to ")[-1].strip()
+                    end_date = datetime.strptime(end_str, "%Y-%m-%d")
+                except Exception:
+                    end_date = datetime.now() - timedelta(days=7)
+
+                logger.info(f"[fetch_training_data] Loaded {len(temps_max)} days from saved dataset")
+                return {
+                    "temps_max":     temps_max,
+                    "temps_min":     temps_min,
+                    "precip":        precip,
+                    "wind":          wind,
+                    "end_date":      end_date,
+                    "training_days": len(temps_max),
+                    "source":        "saved_dataset",
+                }
+        except Exception as e:
+            logger.warning(f"[fetch_training_data] Saved dataset load failed: {e} — falling back to API")
+
+    # ── Fallback: live API call ────────────────────────────────────
+    logger.info("[fetch_training_data] No saved dataset — fetching from Open-Meteo Archive API")
+    end_date   = datetime.now() - timedelta(days=7)
     start_date = end_date - timedelta(days=days)
 
     url = "https://archive-api.open-meteo.com/v1/archive"
     params = {
-        "latitude": LAT,
-        "longitude": LON,
+        "latitude":   LAT,
+        "longitude":  LON,
         "start_date": start_date.strftime("%Y-%m-%d"),
-        "end_date": end_date.strftime("%Y-%m-%d"),
-        "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max",
-        "timezone": "Asia/Kolkata",
+        "end_date":   end_date.strftime("%Y-%m-%d"),
+        "daily":      "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max",
+        "timezone":   "Asia/Kolkata",
     }
 
     r = requests.get(url, params=params, timeout=20)
     r.raise_for_status()
-    data = r.json()
+    data  = r.json()
     daily = data.get("daily", {})
 
     temps_max = [t for t in daily.get("temperature_2m_max", []) if t is not None]
     temps_min = [t for t in daily.get("temperature_2m_min", []) if t is not None]
-    precip = [p for p in daily.get("precipitation_sum", []) if p is not None]
-    wind = [w for w in daily.get("wind_speed_10m_max", []) if w is not None]
+    precip    = [p for p in daily.get("precipitation_sum",  []) if p is not None]
+    wind      = [w for w in daily.get("wind_speed_10m_max", []) if w is not None]
 
     return {
-        "temps_max": temps_max,
-        "temps_min": temps_min,
-        "precip": precip,
-        "wind": wind,
-        "end_date": end_date,
+        "temps_max":     temps_max,
+        "temps_min":     temps_min,
+        "precip":        precip,
+        "wind":          wind,
+        "end_date":      end_date,
         "training_days": len(temps_max),
+        "source":        "live_api",
     }
 
 
@@ -2059,6 +2104,58 @@ def ask_climai(q: str = "weather today"):
     }
 
 
+
+
+# ════════════════════════════════════════════════════════════
+# /refresh-data — Rebuild historical dataset in background
+# ════════════════════════════════════════════════════════════
+@app.post("/refresh-data")
+def refresh_dataset():
+    """
+    Trigger a full dataset rebuild by running build_dataset.py.
+    Run monthly to keep ML training data and LLM context fresh.
+    """
+    import os as _os, subprocess as _subprocess
+    try:
+        if not _os.path.exists("build_dataset.py"):
+            return {"status": "error", "message": "build_dataset.py not found"}
+        _subprocess.Popen(["python", "build_dataset.py"], stdout=_subprocess.DEVNULL, stderr=_subprocess.DEVNULL)
+        return {
+            "status": "started",
+            "message": "Dataset rebuild started in background. Check data/ folder in ~2 minutes.",
+            "files_to_update": ["data/weather_history.json","data/earthquake_history.json","data/aqi_history.json","data/flood_baseline.json","data/llm_context.json"],
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/dataset-status")
+def dataset_status():
+    """Check which dataset files exist and when they were last updated."""
+    import os as _os, json as _json
+    files = {
+        "weather_history":    "data/weather_history.json",
+        "earthquake_history": "data/earthquake_history.json",
+        "aqi_history":        "data/aqi_history.json",
+        "flood_baseline":     "data/flood_baseline.json",
+        "llm_context":        "data/llm_context.json",
+    }
+    result = {}
+    for key, path in files.items():
+        if _os.path.exists(path):
+            stat = _os.stat(path)
+            try:
+                with open(path) as f:
+                    data = _json.load(f)
+                fetched_at = data.get("fetched_at") or data.get("generated_at", "unknown")
+            except Exception:
+                fetched_at = "unknown"
+            result[key] = {"exists": True, "size_kb": round(stat.st_size/1024,1), "fetched_at": fetched_at}
+        else:
+            result[key] = {"exists": False}
+    all_exist = all(v["exists"] for v in result.values())
+    return {"dataset_ready": all_exist, "files": result,
+            "tip": "Run POST /refresh-data to build missing files." if not all_exist else "All dataset files present."}
 
 if __name__ == "__main__":
     import uvicorn  # type: ignore[import]
