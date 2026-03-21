@@ -40,7 +40,7 @@ def _load_llm_context() -> dict:
         if age_hours < _CONTEXT_TTL_HOURS:
             return _context_cache
 
-    context_path = "data/llm_context.json"
+    context_path = "llm_context.json"
     if os.path.exists(context_path):
         try:
             with open(context_path) as f:

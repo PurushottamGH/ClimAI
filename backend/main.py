@@ -249,7 +249,7 @@ def fetch_training_data(days: int = 90):
     """
     import os as _os
     import json as _json
-    dataset_path = "data/weather_history.json"
+    dataset_path = "weather_history.json"
 
     # ── Try loading from saved dataset first ──────────────────────
     if _os.path.exists(dataset_path):
@@ -2123,7 +2123,7 @@ def refresh_dataset():
         return {
             "status": "started",
             "message": "Dataset rebuild started in background. Check data/ folder in ~2 minutes.",
-            "files_to_update": ["data/weather_history.json","data/earthquake_history.json","data/aqi_history.json","data/flood_baseline.json","data/llm_context.json"],
+            "files_to_update": ["weather_history.json","earthquake_history.json","aqi_history.json","flood_baseline.json","llm_context.json"],
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -2134,11 +2134,11 @@ def dataset_status():
     """Check which dataset files exist and when they were last updated."""
     import os as _os, json as _json
     files = {
-        "weather_history":    "data/weather_history.json",
-        "earthquake_history": "data/earthquake_history.json",
-        "aqi_history":        "data/aqi_history.json",
-        "flood_baseline":     "data/flood_baseline.json",
-        "llm_context":        "data/llm_context.json",
+        "weather_history":    "weather_history.json",
+        "earthquake_history": "earthquake_history.json",
+        "aqi_history":        "aqi_history.json",
+        "flood_baseline":     "flood_baseline.json",
+        "llm_context":        "llm_context.json",
     }
     result = {}
     for key, path in files.items():
