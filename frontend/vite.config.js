@@ -8,7 +8,11 @@ export default defineConfig({
   resolve: {
     alias: {
       'pixelarticons/react': path.resolve(__dirname, 'node_modules/pixelarticons/react'),
+      'child_process': path.resolve(__dirname, 'src/mocks/child_process.js'),
     },
+  },
+  build: {
+    chunkSizeWarningLimit: 3000,
   },
   server: {
     port: 5173,
