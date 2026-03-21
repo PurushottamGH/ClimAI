@@ -91,7 +91,7 @@
 /* ── Chart Body (fills remaining space) ── */
 .chart-box-body {
   flex: 1;
-  min-height: 0;
+  min-height: 180px;
   position: relative;
 }
 
