@@ -426,9 +426,7 @@ export default function XaiPanel({ open, onClose }) {
                 {/* ── HEADER ── */}
                 <div className="xai-header">
                     <div className="xai-header-left">
-                        <div className="xai-status-dot" />
                         <span className="xai-header-title">ClimAI</span>
-                        <span className="xai-header-sub">Weather Intelligence · Chennai, India</span>
                     </div>
                     <div className="xai-header-right">
                         {messages.length > 0 && (
