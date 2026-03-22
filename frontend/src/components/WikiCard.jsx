@@ -92,8 +92,7 @@ export default function WikiCard({ event, onClose }) {
             <div className="wiki-timeline-card" onClick={e => e.stopPropagation()}>
                 {/* Header matching EventsTimeline */}
                 <div className="card-header">
-                    <span className="card-id">{event.id || `EVT-${event.year || new Date().getFullYear()}`}</span>
-                    <span className={`card-dot ${event.type}`} />
+                    <span className="card-id">{event.type ? event.type.toUpperCase() : 'EVENT'}</span>
                     <button className="timeline-card-close" onClick={onClose}>×</button>
                 </div>
 
@@ -146,8 +145,12 @@ export default function WikiCard({ event, onClose }) {
                     </div>
 
                     {wikiData?.url && (
-                        <a href={wikiData.url} target="_blank" rel="noreferrer" className="card-link">
-                            Read more on Wikipedia ↗
+                        <a href={wikiData.url} target="_blank" rel="noreferrer" className="card-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            Read more on Wikipedia
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="7" y1="17" x2="17" y2="7"></line>
+                                <polyline points="7 7 17 7 17 17"></polyline>
+                            </svg>
                         </a>
                     )}
                 </div>
