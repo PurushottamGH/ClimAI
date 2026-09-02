@@ -1548,8 +1548,10 @@ def parse_date_from_query(query: str):
 def parse_days_from_query(query: str, default: int = 7) -> int:
     """Extract number of forecast days from query. Ignores 'N days ago' patterns."""
     q = query.lower()
-    # Don't match "N days ago" — that's handled by date parsing
-    m = _re.search(r'(\d+)\s*day(?:s)?(?!\s+ago)', q)
+    # Don't match "N days ago" — that's handled by date parsing.
+    # The lookahead must tolerate the optional trailing 's' so "5 day" can't
+    # slip past the "…ago" check.
+    m = _re.search(r'(\d+)\s*day(?:s)?(?!s?\s+ago)', q)
     return int(m.group(1)) if m else default
 
 
