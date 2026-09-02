@@ -56,7 +56,7 @@ export default function CategoryToggle({ active, onChange }) {
     const handleCategoryClick = (catId) => {
         onChange(catId);
         setHoveredId(null);
-        startCollapse(350);
+        // Collapse only when the pointer leaves the wrapper — never under the cursor.
     };
 
     const handleExpand = () => {
@@ -79,7 +79,19 @@ export default function CategoryToggle({ active, onChange }) {
         >
             {/* ── COLLAPSED: readable label pill — click OR hover to expand ── */}
             {!expanded && (
-                <div className="toggle-collapsed" onClick={handleExpand}>
+                <div
+                    className="toggle-collapsed"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${activeLabel} — expand category selector`}
+                    onClick={handleExpand}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleExpand();
+                        }
+                    }}
+                >
                     <span className="collapsed-pill">{activeLabel}</span>
                     <span className="collapsed-hint">▾</span>
                 </div>

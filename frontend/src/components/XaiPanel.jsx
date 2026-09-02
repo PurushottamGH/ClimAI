@@ -66,6 +66,17 @@ const Icons = {
 
 const IntentIcon = ({ intent }) => Icons[intent] || Icons.bot;
 
+// The backend prepends raw provider error dumps to the analysis when LLM synthesis fails.
+const GROQ_UNAVAILABLE_RE = /^\[Groq unavailable:[^\]]*\]/i;
+
+function cleanAnalysis(text) {
+    const trimmed = (text || '').trim();
+    if (GROQ_UNAVAILABLE_RE.test(trimmed)) {
+        return 'The AI summary service is temporarily unavailable — the live data above was still fetched successfully.';
+    }
+    return trimmed;
+}
+
 /* ─── Markdown-ish text renderer ─────────────────────── */
 function AnalysisText({ text }) {
     if (!text) return null;
@@ -497,7 +508,7 @@ export default function XaiPanel({ open, onClose }) {
                         const cyclone = result?.data?.cyclone;
                         const tsunami = result?.data?.tsunami;
                         const models = result?.models;
-                        const analysis = result?.analysis || '';
+                        const analysis = cleanAnalysis(result?.analysis || '');
 
                         return (
                             <div key={msg.id} className="xai-msg-block">
