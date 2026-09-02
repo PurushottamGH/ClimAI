@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "ports": {"preview": 3000, "additional": {}},
+  "scripts": {
+    "setup": {"enabled": true, "command": "command -v git-lfs >/dev/null 2>&1 || sudo apt-get install -y -qq git-lfs; cd frontend && npm install --no-audit --no-fund"},
+    "run": {"enabled": true, "command": "cd frontend && npm run dev -- --port 3000"},
+    "archive": {"enabled": true, "command": null},
+    "check": {"enabled": true, "command": null}
+  },
+  "mcpServers": []
+}
